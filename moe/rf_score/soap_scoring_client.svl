@@ -1,0 +1,59 @@
+
+// soap server function
+global function soap_spec_RfScoring [] =
+    [
+        [//input
+        output_dir: [
+            title: 'output_dir',
+            type: 'token',
+            description: 'Output directory' ],
+        target: [
+        title: 'target',
+            type: 'token',
+            description: 'Target Name' ]
+        ],
+
+        [//output
+        score: [
+    	    type: 'token', title: 'RF Score', descr: 'RF Score'
+    	]
+        ],
+
+        [//option
+        ]
+    ];
+
+global function soap_RfScoring [arg, opt]
+    // need to change into directory to make sure file is written here
+	cd arg.output_dir;
+	print 'Function: soapfcn_RFScoring'; // for logging purposes
+    local cmd = twrite ['/rf_scoring/scoring_workflow.sh {}', arg.target]; // 2> scoring_workflow.error
+    print cmd;
+    local SLEEPTIME = 0.5; //minimum time needed for process
+    local pkey = exe_open_shell [cmd, [], [], []];
+
+    local out_fno = exe_stdout pkey;
+
+	// Wait for calculation to be finished.
+	// Read from STDOUT handle.
+
+    for 100//timeout
+    while exe_status pkey loop//still running
+print "running...";
+	sleep 1;
+    endloop
+
+    local pIC50 = tok_cat totok last freadb [out_fno, 'line', SVL_MAXLEN];
+    print freadb [out_fno, 'line', SVL_MAXLEN];
+    print pIC50;
+
+    local exitcode = [];
+
+    while exe_status pkey loop
+		sleep SLEEPTIME;
+    endloop
+
+    local ret = [score: pIC50];
+    return ret;
+
+endfunction

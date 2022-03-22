@@ -1,0 +1,453 @@
+// Exectute workflow to dock ligands to templates from MOE Project
+
+#set title	'RF Scoring'
+#set class	'CCG:Support'
+#set version	'2020.10'
+#set main	'Moe_Rf_Scoring'
+
+//------------------------------------------------------------------------------
+// imports
+//------------------------------------------------------------------------------
+
+function db_ImportSD, db_ExportSD, db_ImportDB;
+function fwrite_PDB, fwrite_MDLMOL;
+function QuaSAR_DescriptorMDB;
+function DescriptorList;
+
+//------------------------------------------------------------------------------
+// Server address
+//------------------------------------------------------------------------------
+
+//const SERVER_URL = '';
+
+//------------------------------------------------------------------------------
+
+
+local function db_MoleculeFields database
+    local fields = db_Fields database;
+    return fields(1) | m_join[fields(2), ['molecule', 'moe']];
+endfunction
+
+
+local function export_db_files [output_dir]
+
+    // Extract protein and ligand
+    local rec_atoms = _Atoms '(water and active) or (rec and active)';
+
+    //Write Receptor
+    local pdb_file = twrite [tok_cat [output_dir, '/protein.pdb']];
+
+    fwrite_PDB [pdb_file, rec_atoms, []];	// with fwrite_PDB I can pass
+                        // rec_chains as an argument and only
+                        // these objects will be written to
+                        // to the file
+
+    local ligand_file = tok_cat [output_dir, '/input_ligands.sdf'];
+print ligand_file;
+    local mdb = dbv_DefaultView [];
+    fmkdir apt twrite [tok_cat [output_dir, '/scoring_job_{}'], igen db_nEntries mdb];
+    apt db_ExportSD [mdb, apt twrite [tok_cat [output_dir, '/scoring_job_{}/input_ligands.sdf'], igen db_nEntries mdb], [[]], db_Entries mdb];
+
+endfunction
+
+
+global function export_moe_files [output_dir]
+
+    // Extract protein and ligand
+    //local vis_atoms = _Atoms 'visible'; 	// using _Atoms is a more elegant
+                        // way to fetch atoms with a
+                        // selection language expression
+    local lig_atoms = _Atoms 'lig and visible';
+    local rec_atoms = _Atoms '(water and active) or (rec and active)';
+
+    //How to handle waters?
+    //local rec_chains = uniq aChain rec_atoms;	// I added 'uniq' here to only
+                            // get 1 chain key per chain
+    local lig_chains = uniq aChain lig_atoms;
+
+    //Write Receptor
+    local pdb_file = twrite [tok_cat [output_dir, '/protein.pdb']];
+
+    fwrite_PDB [pdb_file, rec_atoms, []];	// with fwrite_PDB I can pass
+                        // rec_chains as an argument and only
+                        // these objects will be written to
+                        // to the file
+
+    //Write Ligand
+    fwrite_MDLMOL [	tok_cat [output_dir, '/input_ligands.sdf'],
+            lig_atoms, []
+    ];
+                        // fwrite_MDLMOL similar to fwrite_PDB
+                        // here I use the lig_atoms, as the
+                        // ligand chain sometimes also includes
+                        // non-ligand atoms (as in the case of
+                        // 1a6m.pdb)
+
+endfunction
+
+
+local function UserInterface [mdb, opt]
+    local qdesc = DescriptorList [];
+    local items  = apt twrite ['{}\t{}\t{}', qdesc(1), qdesc(3), qdesc(2)];
+    local panel = [
+        name: 'shell',
+        title: 'Score ligands',
+        text: ['OK', 'Cancel'],
+        onTrigger: ['return', 'exit'],
+        Option: [
+                name: 'target_model', title: 'Target model', extendH: 1,
+                text: ['pde-10'],
+                onTrigger: 'return'
+            ],
+        Option:[
+	    	name: 'ligand_molfield', text: '', title: 'Molecule Field',
+	    	extendH: 1
+	    ],
+
+        // List of models
+        Listbox: [
+                    name: 'descriptor_list',
+                    titleTop: 1, flushLeft: 1, extendV: 1, extendH: 1,
+                    header: 'Code\tClass\tDescription', text: items, sortEnable: 1,
+                    multiSelect: 0, onTrigger: 'return', font: 'medium', zebra: 1,
+                    type : 'int', len : 20, width : 35
+                ],
+
+	    // Filter models
+	    Vbox : [
+            flushLeft: 1, extendH: 1,
+
+                Hbox: [
+                    title: 'Class', extendH: 1,
+                    Radio: [
+                        name: 'descriptor_classes', columns: 10,
+                        text : cat ['All', sort uniq qdesc(3)],
+                        onTrigger: 'return',
+                        bubbleHelp:
+                        'Display only descriptors of specified class.'
+                    ],
+                    Hbox: [extendH: 1],
+                    Checkbox: [
+                        name: 'filter_selonly', text: 'Show Selected Only',
+                        bubbleHelp:
+                        'Display only selected descriptors.'
+                            ]
+                ],
+                Hbox : [
+                    extendH: 1, title: 'Filter:', spacing: 'none',
+
+                    Text : [
+                        name: 'filter_text', extendH: 1, type: 'char',
+                        onTrigger: 'return',
+                        bubbleHelp:
+                        'Display only those descriptors that contain\n'
+                        'each of the words entered in the text field.'
+                        ],
+                    Button : [
+                        name: 'filter_clear', extendV: 1, flushTop: 1,
+                        graphics: gr_icon ['cleartext', 'medium', 'foreground'],
+                        onTrigger: 'return',
+                        bubbleHelp: 'Do not filter any descriptors.'
+                        ],
+                    Button : [
+                        name: 'filter_apply', extendV: 1, flushTop: 1,
+                        graphics: gr_icon ['ok', 'medium', 'baseGreen'],
+                        onTrigger: 'return',
+                        bubbleHelp: 'Apply filter text changes.'
+                        ]
+                    ]
+	    ],
+
+	    Hbox: [
+            title: 'Descriptors Selected:', flushLeft: 1, extendH: 1,
+            bubbleHelp: 'Count and list of selected descriptors.',
+            Pager: [
+            Label : [
+                name : 'desc_sel', font : 'mediumBold',
+                text : '0'
+            ],
+            Label : [text: '9999', font: 'mediumBold'] // layout only
+            ],
+            Text : [
+            name : 'desc_sel_list', extendH: 1,
+            sensitive: 0, font: 'medium'
+            ]
+        ]
+    ];
+
+    local wkey = WindowCreate panel;
+    static selected = zero items;		// selection flags
+    static visible = one items;			// visible in list?
+    mdb = dbv_DefaultView [];
+
+    function SetSelectedCodes codes
+        local old_prio = task_prio 0;
+        selected = notnot indexof [qdesc(1), codes];
+        WindowSetData [ wkey, [
+            descriptor_list: x_pack (selected | visible)
+        ]];
+        WindowSetAttr [wkey, [ desc_sel : [
+            text : twrite ['{}', add selected]
+        ]]];
+        local qsel = (qdesc(1) | selected);
+        if length qsel > 50 then qsel = cat [keep [qsel, 50], '...']; endif
+        qsel = tok_drop [tok_cat tok_cat [qsel, ', '], -2];
+        WindowSetData [wkey, [desc_sel_list : qsel]];
+
+        task_prio old_prio;
+    endfunction
+
+    function AddSelectedCodes codes
+        codes = uniq cat [ qdesc(1) | selected, codes ];
+        SetSelectedCodes codes;
+    endfunction
+
+	// ApplyFilters examines the filter_text text field and determines
+	// which descriptor lines should be visible in the list box.  The
+	// class filter is always applied in addition to the text
+
+    function ApplyFilters []
+        local class = WindowGetData [wkey, 'descriptor_classes'];
+        local ftext = WindowGetData [wkey, 'filter_text'];
+        local selonly = WindowGetData [wkey, 'filter_selonly'];
+        class = class.descriptor_classes;
+        ftext = string toupper ftext.filter_text;
+        selonly = selonly.filter_selonly;
+
+        local mask = (class === 'All' or qdesc(3) == class);
+
+            // split the search text into words for subsequent search
+            // and modify each to be *word* for findmatch
+
+        local white = notnot indexof [ftext," \t\015\012\n"];
+        local wmask = xorE [white, rotrpoke [white, not white(1)]];
+        ftext = split [ftext, mtoc wmask] | (not white | wmask);
+        ftext = tok_cat ['*', app token ftext, '*'];
+
+            // apply all of the filters to the headers and retain
+            // only those that match
+
+        local pat;
+        local uitem = toupper items;
+
+        for pat in ftext loop
+            mask = mask and m_findmatch [pat, uitem];
+        endloop
+
+        if selonly then
+            mask = mask and selected;
+        endif
+
+            // set the visibility mask and update the list
+
+        if orE (visible <> mask) then
+            local old_prio = task_prio 0;
+            visible = mask;
+            WindowSetAttr[wkey, [descriptor_list: [text: items|visible]]];
+            WindowSetData[wkey, [descriptor_list: x_pack (selected|visible)]];
+            task_prio old_prio;
+        endif
+    endfunction
+
+    WindowSetAttr[
+	    	wkey,
+	    	[ligand_molfield: [text: db_MoleculeFields mdb]]
+	    ];
+
+	WindowSetData[wkey,	[filter_text: '*pic50*', descriptor_classes: 'Roche']];
+    ApplyFilters [];
+    WindowShow[wkey, 1];
+    loop
+        local [values, trigger] = WindowWait wkey;
+        if trigger === 'shell' then
+            if length _Atoms 'rec and visible' == 0 then
+                Warning 'One receptor molecule should be active';
+                continue;
+            endif
+
+            // Check for active ALT Conformations
+            local collection_atoms = app oAtoms app oGetCollection findmatch ['PDB_ALTLOC_*', oCollections []];
+            local num_active_sets = length cat app first apt mget [aInert collection_atoms, aInert collection_atoms == 0];
+            local num_visible_sets = length cat app first apt mget [aHidden collection_atoms, aHidden collection_atoms == 0];
+            if num_active_sets > 1 or num_visible_sets >1 then
+                Warning 'More than one conformation active. Deactivate or hide alternative conformation in System Manager->Sets';
+                continue;
+            else
+                break;
+            endif
+            break;
+
+        elseif trigger === 'target_model' then
+            WindowSetData[wkey,	[filter_text: tok_cat [tok_keep [values.target_model, 3], '*pic50*']]];
+            ApplyFilters [];
+        elseif trigger === 'descriptor_classes' then
+	        ApplyFilters [];
+	    elseif trigger === 'filter_apply'
+	        or trigger === 'filter_text'
+	        or trigger === 'filter_selonly'
+	            then
+	                ApplyFilters [];
+        elseif trigger === 'descriptor_list' then
+            local idx = x_pack visible;
+            selected[idx] = put [zero idx, first values.descriptor_list, 1];
+            // AddSelectedCodes [];
+            WindowSetAttr [wkey, [
+            desc_sel : [text : twrite ['{}', add selected]]
+            ]];
+
+            local qsel = (qdesc(1) | selected);
+            if length qsel > 50 then qsel = cat [keep [qsel, 50], '...']; endif
+            qsel = tok_drop [tok_cat tok_cat [qsel, ', '], -2];
+            WindowSetData [wkey, [desc_sel_list : qsel]];
+        endif
+    endloop
+
+    WindowShow[wkey, 0];
+    WindowDestroy wkey;
+    return values;
+endfunction
+
+
+global function RfScore_ParseDBOutput [workdir]
+    local output_sdf = tok_cat [workdir, '/rescored_ligands.sdf'];
+    if neL[ftype output_sdf, 'file'] then
+	write['Output SD File {} is not a file\n', output_sdf];
+	exit[];
+    endif
+    local outmdb = fabsname tok_cat[workdir, '/output.mdb'];
+    db_Close db_Open [outmdb, 'create'];
+    db_ImportSD[
+	    outmdb,
+        output_sdf,
+        'rescored_mol',
+        ['RF Score'], ['RF Score'], ['float'], []
+    ];
+    db_DeleteField [outmdb, ['$File', 'rescored_mol']];
+    local inmdb = dbv_DefaultView [];
+
+    // inents holds the entry keys
+    local outents = db_Entries outmdb;
+    local inents = db_Entries inmdb;
+
+    local entry_index = 1;
+    db_EnsureField [ inmdb, 'RF Score', 'float' ];
+    local inent; for inent in inents loop
+        local outent = outents(entry_index);
+        entry_index = entry_index + 1;
+        db_Write [
+            inmdb, inent,
+            [
+            'RF Score':
+                first db_ReadFields[
+                    outmdb, outent, 'RF Score'
+                ]
+            ]
+        ];
+    endloop
+
+
+    db_Close inmdb;
+
+endfunction
+
+
+local function mlpp_model [args]
+    local mdb = dbv_DefaultView [];
+    QuaSAR_DescriptorMDB [mdb, args.ligand_molfield, args.desc_sel_list, [ esel: 0, verbose: 1 ]];
+    local eqn = tok_cat ['({RF Score} + {', args.desc_sel_list, '})/2'];
+    run ['dbcalc.svl', [mdb, eqn, '2D3D_avg'], 'db_Calculator'];
+endfunction
+
+
+global function Moe_Rf_DB_Scoring []
+
+    local jopt =  [server: SERVER_URL];
+    if first web_GetServerPing jopt.server then
+		Warning 'Unable to contact MOE/web server. Exit.';
+		return [];
+	else
+	    print 'Server connection successful';
+    endif
+
+    local values = UserInterface [];
+    local soapopt = [];
+
+    local tmpdir = fnametemp '/tmp/rf_scoring';
+    fmkdir tmpdir;
+    // fsetpermissions [tmpdir, 7];
+    export_db_files [tmpdir];
+
+    // try setting permissions
+    local cmd = twrite ['bash chmod 777 {}', tmpdir];
+    local SLEEPTIME = 0.5; //minimum time needed for process
+    local pkey = exe_open_shell [cmd, [], [], []];
+    local out_fno = exe_stdout pkey;
+    // Wait for calculation to be finished.
+    // Read from STDOUT handle.
+    for 100//timeout
+    while exe_status pkey loop//still running
+        sleep 1;
+    endloop
+
+    soapopt.output_dir = tok_cat ['/projects/site', tok_drop [tmpdir, length ""]];
+    soapopt.target = values.target_model;
+    print soapopt;
+    local ret;
+    local res;
+
+    [res, ret] = web_QuickCall [
+    'RfScoring', soapopt, jopt
+    ];
+    sleep 5;
+    RfScore_ParseDBOutput [tmpdir];
+
+    mlpp_model [values];
+
+endfunction
+
+
+global function Moe_Rf_Scoring [mdb, opt]
+
+    local soapopt = [];
+    local jopt =  [server: SERVER_URL];
+
+    if first web_GetServerPing jopt.server then
+		Warning 'Unable to contact MOE/web server. Exit.';
+		return [];
+	else
+	    print 'Server connection successful';
+    endif
+
+    local tmpdir = fnametemp '/tmp/rf_scoring';
+    fmkdir tmpdir;
+//    fsetpermissions [tmpdir, 7];
+    export_moe_files [tmpdir];
+
+// try setting permissions
+ local cmd = twrite ['bash chmod 777 {}', tmpdir];
+    print cmd;
+    local SLEEPTIME = 0.5; //minimum time needed for process
+    local pkey = exe_open_shell [cmd, [], [], []];
+    local out_fno = exe_stdout pkey;
+	// Wait for calculation to be finished.
+	// Read from STDOUT handle.
+    for 100//timeout
+    while exe_status pkey loop//still running
+	    sleep 1;
+    endloop
+
+    soapopt.output_dir = tok_cat ['/projects/site', tok_drop [tmpdir, length ""]];
+    print soapopt.output_dir;
+    local ret;
+    local res;
+    [res, ret] = web_QuickCall [
+	'RfScoring', soapopt, jopt
+    ];
+    if notnull res then
+        print "Getting docked ligands.";
+        print res.score;
+        local msg = Message [0, tok_cat ['RF Score pIC50: ', res.score]];
+        sleep 120;
+    endif
+
+endfunction

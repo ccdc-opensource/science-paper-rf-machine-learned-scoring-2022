@@ -1,0 +1,74 @@
+
+// soap server function
+global function soap_spec_TemplateDocking [] =
+    [
+        [
+            output_dir: [
+            title: 'output_dir',
+            type: 'token',
+            description: 'Output directory' ],
+
+            ligand_prep: [
+            title: 'ligand_prep',
+            type: 'int',
+            description: 'Prepare ligands or not' ],
+
+            template_project: [
+            title: 'template_project',
+            type: 'token',
+            description: 'template_project'],
+
+            flexible_residues: [
+            title: 'flexible_residues',
+            type: 'token',
+            description: 'flexible_residues']
+        ],
+
+        [//output
+        docked_ligands: [
+    	    type: 'token', title: 'ligands', descr: 'SDFile with docked ligands'
+    	]
+        ],
+
+        [//option
+        ]
+    ];
+
+global function soap_TemplateDocking [arg, opt]
+    // need to change into directory to make sure file is written here
+	cd arg.output_dir;
+	print 'Function: soapfcn_TemplateDocking'; // for logging purposes
+    local cmd = twrite['/template_docking/docking_workflow.sh {} > docking_workflow.out 2> docking_workflow.error', arg.ligand_prep];
+    print cmd;
+    local SLEEPTIME = 0.5; //minimum time needed for process
+    local ekey = exe_open_shell[
+    			cmd, [], [], []
+    			];
+    local exitcode = [];
+    //local msg = Message[0, 'Template docking in progress...'];
+    while exe_status ekey loop
+		sleep SLEEPTIME;
+    endloop
+
+    cd 'docking';
+    print arg.template_project;
+    cmd = twrite['/template_docking/dock.sh {} {}> dock.out 2> dock.error',  arg.template_project, arg.flexible_residues];
+    print cmd;
+    ekey = exe_open_shell[
+    			cmd, [], [], []
+    			];
+    exitcode = [];
+    SLEEPTIME = 10;
+    while exe_status ekey loop
+        print "Waiting for docking jobs to finish...";
+		sleep SLEEPTIME;
+    endloop
+    local output_ligands = twrite['{}/docking/best_docking_solutions.sdf', arg.output_dir];
+    if ftype output_ligands === 'file' then
+        print "Execution on SOAP successful";
+        local ret = [docked_ligands: output_ligands];
+        return ret;
+    endif
+
+    return [];
+endfunction
