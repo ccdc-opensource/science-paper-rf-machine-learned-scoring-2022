@@ -1,0 +1,354 @@
+// Exectute workflow to dock ligands to templates from MOE Project
+const SERVER_URL = '';
+
+// TODO: ENSURE UNIQ LIGAND NAMES
+
+function db_ImportSD, db_ImportMOL2, db_FieldCopy, db_Merge, db_ReorderFields, db_Fields, db_ExportSD, dbv_Open;
+function fwrite_PDB, fwrite_MDLMOL, fwrite_TriposMOL2, _RenderShow;
+
+local function db_MoleculeFields database
+    local fields = db_Fields database;
+    return fields(1) | m_join[fields(2), ['molecule', 'moe']];
+endfunction
+
+global function aProximity [q_positions, r]
+    local atoms = Atoms[];
+    local mask = zero atoms;
+    r = max[0,r];
+    local key = prox_open [r, aPos atoms, r/2];
+    local idx = uniq second prox_find [ key, q_positions, r/2 ];
+    prox_close key;
+    mask = put [mask,idx, 1];
+    return atoms|mask;
+endfunction
+
+
+local function export_moe_files [output_dir, strucid, args]
+
+    if length args.water_positions then
+        local nearby = aProximity [args.water_positions, 2.0];
+        local nearbywateratoms = cat rAtoms uniq aResidue (nearby | aClassRLS nearby == 'sol');
+        Add_H nearbywateratoms;
+        nearbywateratoms = aResidue nearbywateratoms;
+    endif
+
+    // Extract protein and ligand
+    local lig_atoms = _Atoms 'lig and visible';
+    local rec_atoms = _Atoms 'rec and visible';
+
+    //How to handle waters?
+    local rec_chains = uniq aChain rec_atoms;	// I added 'uniq' here to only
+                            // get 1 chain key per chain
+    local lig_chains = uniq aChain lig_atoms;
+
+    //Write Receptor
+    local pdb_file = twrite [tok_cat [output_dir, '/tmp_aligned_for_MOE_sanitized/{}_dry.pdb'], strucid];
+    local mol2_file = twrite [tok_cat [output_dir, '/apo_proteins/{}_dry.mol2'], strucid];
+
+    // PDB file required for B-factors for scoring
+    fwrite_PDB [pdb_file, rec_chains, []];	// with fwrite_PDB I can pass
+                        // rec_chains as an argument and only
+                        // these objects will be written to
+                        // to the file
+    fwrite_TriposMOL2 [mol2_file, rec_chains, []];
+
+    Add_H lig_atoms;
+    aSetHidden [oAtoms _Residues 'lig and visible', 0];
+    lig_atoms = _Atoms 'lig and visible';
+    //Write Ligand
+    fwrite_MDLMOL [	twrite [tok_cat [output_dir, '/ligand_{}.sdf'], strucid],
+            lig_atoms, []
+    ];
+
+    local water_cnt = 1;
+    for water_cnt in igen length nearbywateratoms loop
+        fwrite_TriposMOL2 [	twrite [tok_cat [output_dir, '/apo_proteins/{}_water_{}.mol2'], strucid, water_cnt-1],
+                nearbywateratoms[water_cnt], []
+        ];
+    endloop
+
+endfunction
+
+
+local function export_db_files [mdb, output_dir, args]
+    if isnull mdb then
+            mdb = dbv_DefaultView [];
+        endif
+
+    local entries = db_Entries mdb;    // get entry numbers
+
+    // Extract protein and ligand
+    local psys = SystemPush [];
+    local i=1;
+    local mols=[];
+    for i in igen length entries loop
+        Close [force: 1];
+        local [code, ligand, moe] = db_ReadFields [mdb, entries(i), ['code', 'ligand', 'moe']];
+        if length ligand == 0 then;
+            continue;
+        endif
+
+        local strucid = wordsplit [code, "."];
+        strucid = cat strucid[1];
+        strucid = tok_cat totok strucid;
+        print strucid;
+        local mol = _moe_Create [moe];
+
+        local delatoms = cat oAtoms cat apt oGetCollection [drop [sort oCollections [], 1]];
+        write ['Deleting {} ALTLOC atoms\n',length delatoms];
+        oDestroy delatoms;
+
+        export_moe_files [output_dir, strucid, args];
+
+    endloop
+    SystemPop psys;
+endfunction
+
+
+local function cvt_GetMolName [ent, entum, mol, dst_type]
+    local name = string mol(1)(MOL_NAME);
+    return name;
+endfunction
+
+
+local function UserInterface [mdb, opt]
+    if isnull mdb then
+        mdb = dbv_DefaultView [];
+    endif
+
+    local panel = [
+        name: 'shell',
+        title: 'Gold Template Docking',
+        text: ['OK', 'Cancel'],
+        onTrigger: ['return', 'exit'],
+        Option:[
+	    	name: 'ligand_molfield', text: '', title: 'Ligand Field', bubbleHelp: 'DB field with 2D or 3D ligands',
+	    	extendH: 1
+	    ],
+
+        Hbox: [extendH: 1,
+            Text: [
+                name: 'output_file', title: 'Output Database', len: 30, extendH: 1, allowBlank: 0,
+                bubbleHelp: 'Output MDB with docked ligand poses.'
+            ],
+            Button: [
+                name: 'browse_output_file', text: 'Browse...', onTrigger: 'return'
+            ]
+        ],
+
+        Hbox: [extendH: 1,
+            Text: [
+                name: 'flexible_residues', title: 'Flexible Residues', len: 30, extendH: 1, allowBlank: 0,
+                bubbleHelp: 'Identifiers of residues for flexible GOLD docking. Must be 3-letter code and residue number, e.g. MET713 or met713.'
+            ],
+            Button: [
+                name: 'select_residues', text: 'Select atom of flexible residue...', onTrigger: 'return'
+            ]
+        ],
+
+        Hbox: [extendH: 1,
+            Text: [
+                name: 'waters', title: 'Waters', extendH: 1, len: 30, allowBlank: 1,
+                bubbleHelp: 'Identifiers of Water molecules to be included in GOLD docking.'
+            ],
+            Button: [
+                name: 'select_waters', text: 'Select Water...', onTrigger: 'return'
+            ]
+        ],
+
+        Option: [
+                name: 'template_project', title: 'Template project', extendH: 1, text: [
+                'MOE: Rec+Lig', 'MDB: Template Rec+Lig', 'pde-10'],
+                bubbleHelp: 'MOE: active and visible ligand, active and visible receptor\nMDB: select MDB with template structures \nprojects: dock into prepared projects.'
+
+            ],
+
+        Checkbox: [
+            name: 'ligand_prep', text: 'Prepare ligands', bubbleHelp: 'Enumerate protomers and tautomers, minimize.'
+        ]
+
+    ];
+    local wkey = WindowCreate panel;
+    WindowSetData[wkey, [output_file: 'docked_ligands.mdb']];
+    WindowShow[wkey, 1];
+    WindowSetAttr[
+	    	wkey,
+	    	[ligand_molfield: [text: db_MoleculeFields mdb]]
+	    ];
+    local water_keys = [];
+    loop
+        local [values, trigger] = WindowWait wkey;
+        if trigger === 'shell' then
+            if values.template_project === 'MOE: Rec+Lig' then
+                // Ensure there are active REC atoms
+                if length _Atoms 'lig and visible' == 0 or length _Atoms 'rec and visible' == 0 then
+                    Warning 'One Ligand and one receptor molecule should be active';
+                    continue;
+                endif
+
+                // Check for active ALT Conformations
+                local collection_atoms = app oAtoms app oGetCollection findmatch ['PDB_ALTLOC_*', oCollections []];
+
+                local num_active_sets = length cat app first apt mget [aInert collection_atoms, aInert collection_atoms == 0];
+                local num_visible_sets = length cat app first apt mget [aHidden collection_atoms, aHidden collection_atoms == 0];
+                if num_active_sets > 1 or num_visible_sets >1 then
+                    Warning 'More than one conformation active. Deactivate or hide alternative conformation in System Manager->Sets';
+                    continue;
+                else
+                    break;
+                endif
+            elseif values.template_project === 'MDB: Template Rec+Lig' then
+                values.template_mdb = FilePrompt[mode: 'open', filter: '*.mdb', title: 'Select Template MDB file'];;
+                if notnull values.template_mdb then
+                    break;
+                else
+                    continue;
+                endif
+            else
+                break;
+            endif
+
+        elseif trigger === 'browse_ligand_file' then
+            local ligand_file = FilePrompt[mode: 'open', filter: '*.sdf', title: 'Select ligand file'];
+            if notnull ligand_file then
+                WindowSetData[wkey,
+                [ligand_file: fabsname ligand_file]
+                ];
+            endif
+
+        elseif trigger === 'ligand_file' then
+            ligand_file = values.ligand_file;
+
+        elseif trigger === 'select_residues' then
+            local res_key = aResidue AtomPrompt 'Pick a protein atom';
+            local res = tok_cat [rName res_key, totok rUID res_key];
+            if rClassRLS res_key === 'rec' then
+                WindowSetData[wkey,
+                    [flexible_residues: tok_cat[values.flexible_residues, res, ' ']]
+                    ];
+            endif
+
+        elseif trigger === 'select_waters' then
+            local wat_key = AtomPrompt 'Pick a water atom';
+            local wat_res = aResidue wat_key;
+            res = tok_cat [rName wat_res, totok rNumber wat_res];
+
+            if rClassRLS wat_res === 'sol' then
+                WindowSetData[wkey,
+                    [waters: tok_cat [values.waters, res, ' ']
+                        ]
+                    ];
+
+                water_keys = append [water_keys, wat_key];
+            endif
+
+        //select output mdb
+        elseif trigger === 'browse_output_file' then
+            local output_file = FilePrompt[mode: 'saveAs', filter: '*.mdb', title: 'Select output path'];
+            if notnull output_file then
+                WindowSetData[wkey,
+                [output_file: fabsname output_file]
+                ];
+            endif
+
+        endif
+
+    endloop
+    WindowShow[wkey, 0];
+    WindowDestroy wkey;
+    values.water_positions = aPos water_keys;
+    return values;
+endfunction
+
+
+global function db_TemplateDock [mdb, opt]
+    local values = UserInterface [];
+
+    if isnull mdb then
+        mdb = dbv_DefaultView [];
+    endif
+
+    // Count ligands for docking
+    local lig_cnt = length db_Entries mdb;
+    if lig_cnt > 10000 then
+        exit ['Limit for number of ligands is 10000.'];
+    else
+        print twrite ['Number of ligands to be docked: {}', lig_cnt];
+    endif
+
+    local soapopt = [];
+    local jopt =  [server: SERVER_URL];
+
+    if first web_GetServerPing jopt.server then
+		Warning 'Unable to contact MOE/web server. Exit.';
+		return [];
+	else
+	    print 'Server connection successful';
+    endif
+
+    local TMPDIR = '/tmp/template_docking';
+    local tmpdir = fnametemp tok_cat ['', TMPDIR];
+    fmkdir tmpdir;
+    fmkdir tok_cat [tmpdir, '/tmp_aligned_for_MOE_sanitized'];
+    fmkdir tok_cat [tmpdir, '/apo_proteins'];
+
+    if values.template_project === 'MOE: Rec+Lig' then
+        // Export files
+        values.template_project = 'default';
+        local strucid = cName uniq aChain _Atoms 'rec and visible';
+        export_moe_files [tmpdir, strucid, values];
+    elseif values.template_project === 'MDB: Template Rec+Lig' then
+        values.template_project = 'default';
+        export_db_files [values.template_mdb, tmpdir, values];
+    endif
+
+    db_ExportSD [ mdb, 	tok_cat [tmpdir, '/input_ligands.sdf'], values.ligand_molfield, [], [] ];
+
+    // if prepare ligand_file, run scoring_workflow
+    if values.ligand_prep === 1 then
+        print 'preparing ligands...';
+    else
+        print 'Not preparing ligands.';
+    endif
+
+    soapopt.output_dir = tok_cat ['/projects/site/', tok_drop [tmpdir, length ""]];
+    print soapopt.output_dir;
+    soapopt.ligand_prep = values.ligand_prep;
+    soapopt.template_project = values.template_project;
+    soapopt.flexible_residues = values.flexible_residues;
+    local ret;
+    local res;
+    [res, ret] = web_QuickCall [
+	'TemplateDocking', soapopt, jopt
+    ];
+    if notnull res then
+        print "Getting docked ligands.";
+	    res.docked_ligands = tok_cat [tmpdir, '/docking/best_docking_solutions.sdf'];
+        db_Close db_Open [values.output_file, 'create'];
+        db_ImportSD [values.output_file, res.docked_ligands, 'ligand', [], [], [], []];
+
+        ///Process pockets MDB
+        local temp_pocket_mdb = tok_cat [tmpdir, '/docking/pockets.mdb'];
+        db_Close db_Open [temp_pocket_mdb, 'create'];
+        local docked_pockets = tok_cat [tmpdir, '/docking/pockets.mol2'];
+        db_ImportMOL2 [docked_pockets, temp_pocket_mdb, 'pocket', [], [], [], []];
+
+        local sys = SystemPush [];
+        opt.cvtfcn = #cvt_GetMolName;
+
+        db_FieldCopy [ values.output_file, 'ligand', 'name', 'char', opt];
+        db_FieldCopy [ temp_pocket_mdb, 'pocket', 'name', 'char', opt];
+
+        SystemPop sys;
+
+        db_Merge [db1: values.output_file, db2: temp_pocket_mdb, db3: [], key1: 'name', key2: 'name', import1: [], import2: [], opt: [] ];
+        local fields = db_Fields values.output_file;
+        local field_vector =  cat [4, 1, 3, drop [igen length fields(1), 4], 2];
+        db_ReorderFields [ values.output_file, fields(1), field_vector ];
+
+        /// Finish processing pockets MDB
+
+        dbv_Open values.output_file;
+    endif
+
+endfunction
