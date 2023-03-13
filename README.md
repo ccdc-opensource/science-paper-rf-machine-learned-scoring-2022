@@ -1,6 +1,5 @@
 # science-paper-rf-machine-learned-scoring-2022
 
-
 Docking and scoring workflows
 
 ---
@@ -14,6 +13,7 @@ templates in 3D. Manual curation of the templates is highly recommended to ensur
 structures
 - [docking_home]/tmp_aligned_for_MOE_sanitized/*.pdb \
 contains aligned protein structures from MOE projects
+
 ```
 mkdir docking
 cd docking
@@ -21,6 +21,7 @@ bsub < dock.sh
 #after docking has finished
 join_docked_rf_counts.py -t [target]
 ```
+
 ---
 **Template based docking in Python**
 `docking.py --input_ligands ligands.sdf -t default -fr=Met713 Met712`
@@ -34,6 +35,7 @@ If one of the defined projects is selected, the return results will include the 
 ---
 
 **Generating project specific parameters:**
+
 - Series definitions are stored in rf_scoring/series_definitions/[target].json
 
 ```
@@ -47,18 +49,19 @@ ccdc_roche_scoring/stat_potential.py -t pde-10
 ---
 
 **Applications for MOE**
+
 - Start a webserver:
+
 ```
 # LOAD ENV
 moeweb -load /rf_scoring/soap_scoring_client.svl -load /template_docking/soap_template_docking_client.svl 
 ```
+
 - Adapt the SVL scripts to point to the webserver: \
 `const SERVER_URL = 'server address';`
-
 
 ---
 
 **Scoring in MOE** \
 Score an MDB of ligand poses for the active protein.
 ---
-
