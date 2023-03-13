@@ -21,6 +21,7 @@ bsub < dock.sh
 #after docking has finished
 join_docked_rf_counts.py -t [target]
 ```
+
 ---
 **Template based docking in Python**
 `docking.py --input_ligands ligands.sdf -t default -fr=Met713 Met712`
