@@ -56,6 +56,7 @@ ccdc_roche_scoring/stat_potential.py -t pde-10
 # LOAD ENV
 moeweb -load /rf_scoring/soap_scoring_client.svl -load /template_docking/soap_template_docking_client.svl 
 ```
+
 - Adapt the SVL scripts to point to the webserver: \
 `const SERVER_URL = 'server address';`
 
