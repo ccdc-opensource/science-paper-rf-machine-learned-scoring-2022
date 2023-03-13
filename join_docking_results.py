@@ -2,10 +2,11 @@
 
 ########################################################################################################################
 
-from rdkit.Chem import PandasTools
-from pathlib import Path
 import pandas as pd
 from ccdc import io
+from pathlib import Path
+from rdkit.Chem import PandasTools
+
 
 ########################################################################################################################
 
@@ -22,7 +23,6 @@ def main():
         mol_df['docking_folder'] = str(Path(f).parent)
         dfs.append(mol_df)
 
-
     df = pd.concat(dfs, ignore_index=True, sort=False)
     df['lig_id'] = df['ID'].str.split('|', expand=True)[1]
     df = df.astype({'RMSD_to_mcs': float})
@@ -37,7 +37,8 @@ def main():
     PandasTools.WriteSDF(df, 'best_docking_solutions.sdf', properties=list(df.columns))
 
     docking_folders = df['docking_folder'].to_list()
-    docked_pockets = [str(f) for f in Path('.').glob('docking_job_*/*/best_soln_pocket.mol2') if str(f.parent) in docking_folders]
+    docked_pockets = [str(f) for f in Path('.').glob('docking_job_*/*/best_soln_pocket.mol2') if
+                      str(f.parent) in docking_folders]
 
     rdr = io.EntryReader(docked_pockets)
     with io.EntryWriter('pockets.mol2') as w:

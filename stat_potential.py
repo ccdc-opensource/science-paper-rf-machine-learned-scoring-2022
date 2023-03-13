@@ -2,8 +2,8 @@
 
 ########################################################################################################################
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 np.seterr(all="ignore")
 from scipy.optimize import least_squares
@@ -425,7 +425,7 @@ class PlpScoring(object):
         distances = favorable_contacts['distance'].sort_index()
         clash_counts = favorable_contacts['clash_count'].sort_index()
         favorable_contacts.loc[(distances < A), 'plp_energy'] = clash_factor * (clash_counts + 1) * (
-                    (A - distances) / A) + clash_factor
+                (A - distances) / A) + clash_factor
         favorable_contacts.loc[(distances >= A) & (distances < B), 'plp_energy'] = E * (distances - A) / (B - A)
         favorable_contacts.loc[(distances >= B) & (distances < C), 'plp_energy'] = E
         favorable_contacts.loc[(distances >= C) & (distances < D), 'plp_energy'] = E * (D - distances) / (D - C)
@@ -435,9 +435,9 @@ class PlpScoring(object):
         clash_counts = unfavorable_contacts['clash_count'].sort_index()
         distances = unfavorable_contacts['distance'].sort_index()
         unfavorable_contacts.loc[(distances < A_unfav), 'plp_energy'] = clash_factor * (clash_counts + 1) * (
-                    (A_unfav - distances) / A_unfav) + clash_factor
+                (A_unfav - distances) / A_unfav) + clash_factor
         unfavorable_contacts.loc[(distances >= A_unfav) & (distances < B_unfav), 'plp_energy'] = -F_unfav * (
-                    distances - A_unfav) / (B_unfav - A_unfav) + F_unfav
+                distances - A_unfav) / (B_unfav - A_unfav) + F_unfav
 
         ligand_contact_df = pd.concat([favorable_contacts, unfavorable_contacts])
 
@@ -454,7 +454,7 @@ class PlpScoring(object):
                         params_dict['hbond_rho2'] - params_dict['hbond_rho1'])
 
                 ligand_interaction_df.loc[buriedness >= params_dict['hbond_rho2'], 'plp_energy'] = \
-                ligand_interaction_df['plp_energy']
+                    ligand_interaction_df['plp_energy']
 
             if interaction_type in ['pi', 'hydrophobic', 'multipolar', 'hbond_weak', 'desolvation']:
                 buriedness = ligand_interaction_df['los_atom_buriedness']

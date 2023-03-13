@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import time
 import argparse
+import time
 from openeye import oechem, oeomega, oequacpac
 
 
@@ -87,7 +87,6 @@ def gen_confs_from_mcs(mol, mcsmatch, maxintconfs=50, torlib="guba", timeout=10.
 
 def _omega_overlay(tmp_ligand_file='tmp_ligand_mol.mol2', tmp_scaffold_file='tmp_scaffold_mol.mol2',
                    output='tmp_oe_ligand.sdf'):
-
     lig_ifs = oechem.oemolistream()
     if lig_ifs.open(tmp_ligand_file):
         oe_ligand = next(lig_ifs.GetOEMols())
@@ -121,4 +120,4 @@ if __name__ == '__main__':
     t1 = time.time()
     main()
     t2 = time.time()
-    print('main took ', t2-t1, ' s.')
+    print('main took ', t2 - t1, ' s.')

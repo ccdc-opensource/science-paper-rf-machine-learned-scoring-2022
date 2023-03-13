@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
+import numpy as np
 import pandas as pd
+from pathlib import Path
 from rdkit.Chem import PandasTools
 from scipy.stats import spearmanr, pearsonr, bootstrap
-from sklearn.metrics import mean_squared_error
-from pathlib import Path
-import numpy as np
 # from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
 
 
 def add_attentive_fp(attentive_fp_df, predictions_df, dgl_path, extension=''):
@@ -33,7 +33,7 @@ def return_rmse(x, y):
 
 
 def return_r2(x, y):
-    return pearsonr(x, y)[0]**2
+    return pearsonr(x, y)[0] ** 2
 
 
 def return_spearmanr(x, y):
@@ -42,7 +42,7 @@ def return_spearmanr(x, y):
 
 def return_ci(x, y, fn):
     ci = bootstrap((x, y), fn, vectorized=False, paired=True).confidence_interval
-    ci = (ci[1]-ci[0]) / 2
+    ci = (ci[1] - ci[0]) / 2
     return ci
 
 
@@ -56,7 +56,9 @@ class TableMaker(object):
         vanilla_df = vanilla_df[vanilla_df['Gold.PLP.Fitness'] > 0]
         self.vanilla_df = vanilla_df
 
-    def make_table(self, dgl_path=Path('dgl_models_random'), rf_score_path=Path('docking_template_date/first_iteration_random_split'), output=Path('table1_with_avg_scaled.csv')):
+    def make_table(self, dgl_path=Path('dgl_models_random'),
+                   rf_score_path=Path('docking_template_date/first_iteration_random_split'),
+                   output=Path('table1_with_avg_scaled.csv')):
         '''Collect data for manuscript Table 1: Random split'''
 
         dataset_df = pd.read_csv(dgl_path / 'dataset_df.csv')
@@ -79,8 +81,10 @@ class TableMaker(object):
 
         # Fit docking score to pIC50
         vanilla_train_df = self.vanilla_df[self.vanilla_df['SRN'].isin(train_srns)]
-        vanilla_train_df = vanilla_train_df.join(dataset_df[dataset_df['SRN'].isin(train_srns)][['SRN', 'pde10_h_pic50']].set_index('SRN'), on='SRN')
-        linear_fit = LinearRegression().fit(vanilla_train_df['Gold.PLP.Fitness'].to_numpy().reshape(-1, 1), vanilla_train_df['pde10_h_pic50'].to_numpy().reshape(-1, 1))
+        vanilla_train_df = vanilla_train_df.join(
+            dataset_df[dataset_df['SRN'].isin(train_srns)][['SRN', 'pde10_h_pic50']].set_index('SRN'), on='SRN')
+        linear_fit = LinearRegression().fit(vanilla_train_df['Gold.PLP.Fitness'].to_numpy().reshape(-1, 1),
+                                            vanilla_train_df['pde10_h_pic50'].to_numpy().reshape(-1, 1))
         vanilla_test_df['vanilla_Gold.PLP.Fitness_scaled'] = linear_fit.predict(
             vanilla_test_df['vanilla_Gold.PLP.Fitness'].to_numpy().reshape(-1, 1))
 
@@ -171,17 +175,16 @@ def main():
 
     # Table 2
     table_maker.make_table(dgl_path=Path('dgl_models_aminohetaryl_c1_amide'),
-               rf_score_path=Path('docking_template_date/first_iteration_aminohetaryl_c1_amide'),
-               output=Path('table3_aminohetaryl_c1_amide_with_avg_scaled.csv'))
-
+                           rf_score_path=Path('docking_template_date/first_iteration_aminohetaryl_c1_amide'),
+                           output=Path('table3_aminohetaryl_c1_amide_with_avg_scaled.csv'))
 
     table_maker.make_table(dgl_path=Path('dgl_models_c1_hetaryl_alkyl_c2_hetaryl'),
-               rf_score_path=Path('docking_template_date/first_iteration_c1_hetaryl_alkyl_c2_hetaryl'),
-               output=Path('table4_c1_hetaryl_alkyl_c2_hetaryl_with_avg_scaled.csv'))
+                           rf_score_path=Path('docking_template_date/first_iteration_c1_hetaryl_alkyl_c2_hetaryl'),
+                           output=Path('table4_c1_hetaryl_alkyl_c2_hetaryl_with_avg_scaled.csv'))
 
     table_maker.make_table(dgl_path=Path('dgl_models_aryl_c1_amide_c2_hetaryl'),
-               rf_score_path=Path('docking_template_date/first_iteration_aryl_c1_amide_c2_hetaryl'),
-               output=Path('table5_aryl_c1_amide_c2_hetaryl_with_avg_scaled.csv'))
+                           rf_score_path=Path('docking_template_date/first_iteration_aryl_c1_amide_c2_hetaryl'),
+                           output=Path('table5_aryl_c1_amide_c2_hetaryl_with_avg_scaled.csv'))
 
     return
 

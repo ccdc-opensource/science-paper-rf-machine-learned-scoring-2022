@@ -1,5 +1,5 @@
-from pymol import cmd
 from pathlib import Path
+from pymol import cmd
 
 
 def main():

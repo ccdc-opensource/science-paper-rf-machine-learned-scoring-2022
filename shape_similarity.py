@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-import time
 import argparse
 import openeye
+import time
 from openeye.oechem import *
 from openeye.oeomega import *
 from openeye.oeshape import *
@@ -95,7 +95,7 @@ class Rescorer(object):
 
         res_val = sorted(res_val, key=lambda x: x[3], reverse=True)
         t2 = time.time()
-        print(f'finish: time {t2-t1}')
+        print(f'finish: time {t2 - t1}')
         diverse_confs = []
         for j, lx in enumerate(res_val):
             if j >= nmax:
@@ -156,4 +156,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

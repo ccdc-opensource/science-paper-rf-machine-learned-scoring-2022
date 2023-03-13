@@ -1,8 +1,9 @@
-import seaborn as sns
-import pandas as pd
-from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
+from pathlib import Path
+
 
 ########################################################################################################################
 
@@ -35,7 +36,8 @@ def main():
     df['pIC50 change'] = df['prediction'] - df['parent_prediction']
     df.loc[df['ligand_id'].str.contains('intra'), 'category'] = 'strain'
     df.loc[df['ligand_id'].str.contains('inter'), 'category'] = 'clash'
-    df.loc[(df['ligand_id'].str.contains('inter') == False) & (df['ligand_id'].str.contains('intra') == False), 'category'] = 'contact'
+    df.loc[(df['ligand_id'].str.contains('inter') == False) & (
+                df['ligand_id'].str.contains('intra') == False), 'category'] = 'contact'
     df = df[df['is_parent'] == False]
 
     proasis_pdb_df = pd.read_csv('../proasis_pdb.csv')

@@ -1,13 +1,13 @@
-
 ########################################################################################################################
 
+import argparse
+import pandas as pd
 from ccdc import io, docking
 from ccdc_roche.python.los_descriptors import _cut_out_binding_site_by_distance
-from pathlib import Path
-import pandas as pd
-from pathos.multiprocessing import ProcessingPool
 from functools import partial
-import argparse
+from pathlib import Path
+from pathos.multiprocessing import ProcessingPool
+
 
 ########################################################################################################################
 
@@ -91,9 +91,12 @@ def main():
                 ligand_entry = io.EntryReader(str(ligand_file))[0]
                 dicts.append(ligand_entry.attributes)
                 PDB_codes.append(d.stem)
-    attributes_dict = {k: [d[k] for d in dicts] for k in dicts[0] if k not in ['Gold.PLP.SBar', 'Gold.Protein.RotatedWaterAtoms', 'NETCHARGE', 'Proasis ID', 'series'] and 'Gold.Protein' not in k}
+    attributes_dict = {k: [d[k] for d in dicts] for k in dicts[0] if
+                       k not in ['Gold.PLP.SBar', 'Gold.Protein.RotatedWaterAtoms', 'NETCHARGE', 'Proasis ID',
+                                 'series'] and 'Gold.Protein' not in k}
     attributes_dict['PDB_code'] = PDB_codes
-    attributes_dict['release_year'] = attributes_dict['PDE10_FULL_LEN_CGMP_SPA_IC50_h-PDE10A(14-779)-E.Coli-c: AP005128;Min;EXP Test Date']
+    attributes_dict['release_year'] = attributes_dict[
+        'PDE10_FULL_LEN_CGMP_SPA_IC50_h-PDE10A(14-779)-E.Coli-c: AP005128;Min;EXP Test Date']
     del attributes_dict['PDE10_FULL_LEN_CGMP_SPA_IC50_h-PDE10A(14-779)-E.Coli-c: AP005128;Min;EXP Test Date']
     df = pd.DataFrame(attributes_dict)
     series_df = pd.read_csv('../series_assignment.csv')
@@ -108,13 +111,15 @@ def main():
     si_df = df[['SRN', 'pde10_h_pic50', 'PDB_code', 'release_year', 'series', 'template_strucid']]
     si_df['compound_id'] = si_df['PDB_code'].str.split('_', expand=True)[1]
     si_df = si_df.drop(columns='PDB_code')
-    si_df = si_df.rename(columns={'release_year': 'pic50_date', 'series': 'binding_mode_class', 'pde10_h_pic50': 'pic50'})
+    si_df = si_df.rename(
+        columns={'release_year': 'pic50_date', 'series': 'binding_mode_class', 'pde10_h_pic50': 'pic50'})
     si_df = si_df.join(pdb_proasis_df.set_index('strucid'), on='template_strucid')
     si_df['docking_folder'] = si_df['PDB_code'] + '_' + si_df['compound_id']
     smiles_df = pd.read_csv('../dgl_models_random/attentive_fp/2d_dataset_df.csv')
     smiles_df = smiles_df[['SRN', 'SMILES']]
     si_df = si_df.join(smiles_df.set_index('SRN'), on='SRN')
-    si_df = si_df[['SRN', 'compound_id', 'SMILES', 'binding_mode_class', 'pic50', 'pic50_date', 'DATESOLVED', 'docking_folder']]
+    si_df = si_df[
+        ['SRN', 'compound_id', 'SMILES', 'binding_mode_class', 'pic50', 'pic50_date', 'DATESOLVED', 'docking_folder']]
     si_df = si_df.sort_values('compound_id')
     scenarios = Path('..').glob('dgl_models_*')
     for scenario in scenarios:

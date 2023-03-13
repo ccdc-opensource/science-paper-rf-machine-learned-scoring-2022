@@ -6,12 +6,13 @@ Concatenate all rf_count dfs after assigning to each docking_dir
 
 ########################################################################################################################
 
-import sys
-import pandas as pd
-from pathlib import Path
 import argparse
+import pandas as pd
+import sys
 from ccdc import io
+from pathlib import Path
 from rdkit.Chem import PandasTools
+
 
 ########################################################################################################################
 
@@ -45,7 +46,6 @@ def parse_args():
 
 
 def get_best_docking_solutions(df, rescoring=False):
-
     if rescoring:
         filtered_df = df.sort_values(
             by=['rescore', 'rel_mcs_size', 'tanimoto_similiarity_to_native_ligand'],
@@ -60,14 +60,14 @@ def get_best_docking_solutions(df, rescoring=False):
         filtered_df['SRN'] = filtered_df['SRN'].str.split('-', expand=True)[0]
         filtered_df = filtered_df.drop_duplicates('SRN')
 
-    filtered_df = filtered_df.drop(columns=[c for c in filtered_df.columns if 'Gold.Protein' in c or 'Gold.Chemscore.Hbonds' in c])
+    filtered_df = filtered_df.drop(
+        columns=[c for c in filtered_df.columns if 'Gold.Protein' in c or 'Gold.Chemscore.Hbonds' in c])
     filtered_df = filtered_df[(filtered_df['RMSD_to_mcs'] <= 1.5) & (filtered_df['rel_mcs_size'] >= 0.5)]
 
     return filtered_df, df
 
 
 def concatenate_rf_counts(args):
-
     if args.rescore:
         dfs = list(Path('.').glob('*docking_job*/rescored_rf_count.csv'))
         scoring_function = 'rescore'

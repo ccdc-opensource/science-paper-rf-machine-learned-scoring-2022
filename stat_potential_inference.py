@@ -2,14 +2,15 @@
 
 ########################################################################################################################
 
-from ccdc_roche_scoring import descriptor_dfs, stat_potential, scoring_parameters, docking
 import argparse
-from rdkit import Chem
 import json
-import pandas as pd
 import numpy as np
-from pathlib import Path
+import pandas as pd
 from ccdc import io, search
+from ccdc_roche_scoring import descriptor_dfs, stat_potential, scoring_parameters, docking
+from pathlib import Path
+from rdkit import Chem
+
 
 ########################################################################################################################
 
@@ -105,7 +106,8 @@ class StatPotInferer():
     def _return_dfs(self):
         if self.gold:
             rf_count_df, mol_contact_df = descriptor_dfs.return_contact_df_from_docking_file(
-                self.ligand_file, target_home=self.target_home, strucid=self.ligand_file.parent.resolve().name.split('_')[0])
+                self.ligand_file, target_home=self.target_home,
+                strucid=self.ligand_file.parent.resolve().name.split('_')[0])
 
         else:
             rdkit_protein = Chem.MolFromPDBFile(self.protein, removeHs=False)
@@ -174,7 +176,8 @@ def main():
                             __file__).parent / f'scoring_parameters/{args.target}/weights_{ligand_series}.json'
 
                     else:
-                        with open(Path(__file__).parent / Path(f'series_definitions/{args.target}.json')) as series_defs:
+                        with open(
+                                Path(__file__).parent / Path(f'series_definitions/{args.target}.json')) as series_defs:
                             series_dict = json.load(series_defs)
                         for series in series_dict:
                             smarts = search.SMARTSSubstructure(series_dict[series])
@@ -183,7 +186,8 @@ def main():
                             hits = searcher.search(ligand.molecule)
                             if hits:
                                 ligand_series = series
-                                scoring_parameter_file = Path(__file__).parent / f'scoring_parameters/{args.target}/weights_{ligand_series}.json'
+                                scoring_parameter_file = Path(
+                                    __file__).parent / f'scoring_parameters/{args.target}/weights_{ligand_series}.json'
                                 if not scoring_parameter_file.is_file():
                                     scoring_parameter_file = Path(
                                         __file__).parent / f'scoring_parameters/{args.target}/weights_train.json'
@@ -216,7 +220,7 @@ def main():
 
         mol_contact_dfs = mol_contact_dfs[mol_contact_dfs['SRN'].isin(test_srns)]
         rf_count_dfs = rf_count_dfs[rf_count_dfs['SRN'].isin(test_srns)]
-        ligand_series ='train'
+        ligand_series = 'train'
         for ligand_file, mol_contact_df in mol_contact_dfs.groupby('ligand_file'):
             rf_count_df = rf_count_dfs[rf_count_dfs['ligand_file'] == ligand_file]
             scorer = StatPotInferer(args.target, ligand_series, ligand_file, mol_contact_df=mol_contact_df,

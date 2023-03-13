@@ -1,13 +1,14 @@
 ########################################################################################################################
 
-from sklearn.manifold import TSNE
-from pathlib import Path
-import pandas as pd
 import numpy as np
-from rdkit.Chem import PandasTools
-from rdkit.Chem import AllChem
+import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
+from pathlib import Path
+from rdkit.Chem import AllChem
+from rdkit.Chem import PandasTools
+from sklearn.manifold import TSNE
+
 
 ##########################################################################################################
 
@@ -35,7 +36,7 @@ class TsnePlotter():
                               hue='split', palette='Greys')
         # l1_handles, l1_lables = ax1.get_legend_handles_labels()
         ax2 = sns.scatterplot(x='x', y='y', hue='split', hue_order=['train', 'val', 'test'],
-                               data=plot_df[plot_df['split'] != 'extended dataset'], palette=palette, edgecolor='black')
+                              data=plot_df[plot_df['split'] != 'extended dataset'], palette=palette, edgecolor='black')
         # l2_handles, l2_lables = ax2.get_legend_handles_labels()
         # ax2.legend(l1_handles + l2_handles, l1_lables + l2_lables)
 
@@ -50,9 +51,12 @@ def main():
     TSNE.make_tsne(dgl_path=Path('dgl_models_temporal_2011'), output='tsne_temporal_2011.png', palette='colorblind')
     TSNE.make_tsne(dgl_path=Path('dgl_models_temporal_2012'), output='tsne_temporal_2012.png', palette='colorblind')
     TSNE.make_tsne(dgl_path=Path('dgl_models_temporal_2013'), output='tsne_temporal_2013.png', palette='colorblind')
-    TSNE.make_tsne(dgl_path=Path('dgl_models_aminohetaryl_c1_amide'), output='tsne_aminohetaryl_c1_amide.png', palette='colorblind')
-    TSNE.make_tsne(dgl_path=Path('dgl_models_aryl_c1_amide_c2_hetaryl'), output='tsne_aryl_c1_amide_c2_hetaryl.png', palette='colorblind')
-    TSNE.make_tsne(dgl_path=Path('dgl_models_c1_hetaryl_alkyl_c2_hetaryl'), output='tsne_c1_hetaryl_alkyl_c2_hetaryl.png', palette='colorblind')
+    TSNE.make_tsne(dgl_path=Path('dgl_models_aminohetaryl_c1_amide'), output='tsne_aminohetaryl_c1_amide.png',
+                   palette='colorblind')
+    TSNE.make_tsne(dgl_path=Path('dgl_models_aryl_c1_amide_c2_hetaryl'), output='tsne_aryl_c1_amide_c2_hetaryl.png',
+                   palette='colorblind')
+    TSNE.make_tsne(dgl_path=Path('dgl_models_c1_hetaryl_alkyl_c2_hetaryl'),
+                   output='tsne_c1_hetaryl_alkyl_c2_hetaryl.png', palette='colorblind')
 
 
 if __name__ == '__main__':
