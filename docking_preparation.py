@@ -8,22 +8,19 @@ Generate binding sites by doing an MCS alignment of project data to available cr
 
 import argparse
 import pandas as pd
-import subprocess as sp
-from ccdc import io, protein, descriptors, entry
+from ccdc import io, protein, entry
 from pathlib import Path
 from rdkit import Chem
+from ccdc_roche.python.los_descriptors import _cut_out_binding_site_by_distance
 
 
 ########################################################################################################################
 
 
 def parse_args():
-    '''Define and parse the arguments to the script.'''
+    """Define and parse the arguments to the script."""
     parser = argparse.ArgumentParser(
-        description=
-        """
-        Execute Line of sight contact scripts.
-        """,
+        description='Execute Line of sight contact scripts.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter  # To display default values in help message.
     )
 
@@ -117,7 +114,6 @@ def _get_pdb_ligname_df(target='pde-10'):
 
 
 def _sanitize_pdb_files(target='pde-10'):
-    from rdkit import Chem
     pdb_files = list((Path('/rf_scoring') / Path(target) / Path('tmp_aligned_for_MOE')).glob('*.pdb'))
     sanitized_path = Path('/rf_scoring') / Path(target) / Path('tmp_aligned_for_MOE_sanitized')
 
@@ -156,7 +152,6 @@ def _sanitize_pdb_files(target='pde-10'):
 
 
 def _get_binding_site_residues(target='pde-10'):
-    from ccdc_roche.python.los_descriptors import _cut_out_binding_site_by_distance
     sanitized_path = Path('/rf_scoring') / Path(target) / Path(
         'tmp_aligned_for_MOE_sanitized')
 
@@ -212,7 +207,6 @@ def _export_ligands(target='pde-10'):
     pdb_ligand_df = pd.read_csv('pdb_ligand.csv')
     ligand_ids = list(pdb_ligand_df['ligand'].unique())
     protein_files = Path('final_pdb_files').glob('*.pdb')
-    ligands = []
     for cnt, protein_file in enumerate(protein_files):
 
         protein_file_str = str(protein_file)
@@ -266,7 +260,8 @@ def _export_ligands(target='pde-10'):
 
 
 def main():
-    args = parse_args()
+    # args = parse_args()
+    parse_args()
     _export_ligands()
 
     # print('Getting alignment templates...')

@@ -388,11 +388,11 @@ def update_gold_conf(gold_conf, water_paths=False, fixed_bonds=None, args=None):
     newdata = newdata.replace('migratewt = 0', 'migratewt = 10')
 
     newdata = newdata.replace('solvate_all = 1',
-                              f'solvate_all = 1\n' + fixed_bonds)
+                              'solvate_all = 1\n' + fixed_bonds)
     newdata = newdata.replace('param_file = DEFAULT',
-                              f'param_file = /rf_scoring/gold_custom.params')
+                              'param_file = /rf_scoring/gold_custom.params')
     newdata = newdata.replace('rescore_param_file = DEFAULT',
-                              f'rescore_param_file = /rf_scoring/gold_custom.params')
+                              'rescore_param_file = /rf_scoring/gold_custom.params')
 
     if water_paths:
         newdata = newdata + '  WATER DATA\n'
@@ -405,12 +405,12 @@ def update_gold_conf(gold_conf, water_paths=False, fixed_bonds=None, args=None):
 
 
 def is_in_ring_with_open_valency(atom, mol):
-    '''
+    """
     Check if an atom belongs to a "flat" ring system that has an open valency
-    :param atom: 
-    :param mol: 
-    :return: 
-    '''
+    :param atom: the atom
+    :param mol: the molecule containing the atom
+    :return: True or False
+    """
 
     if atom not in mol.atoms:
         return Exception('Atom is not part of Molecule.')
@@ -493,7 +493,7 @@ def _mcs_metrics(docked_ligand_entry, scaffold):
 
 
 def _select_best_soln(docking_folder, scaffold, row, srn, pdb_id, attributes, scaffold_filename):
-    docked_ligand_files = docking_folder.glob(f'gold_soln_docking_input_*_*_*.sdf')
+    docked_ligand_files = docking_folder.glob('gold_soln_docking_input_*_*_*.sdf')
 
     best_soln = entry.Entry()
     best_soln_fitness = -999
@@ -553,7 +553,7 @@ def _select_best_soln(docking_folder, scaffold, row, srn, pdb_id, attributes, sc
 
 
 def _select_best_decoy(docking_folder, mcs_searcher, scaffold, srn, pdb_id, reference_ligand_file):
-    docked_ligand_files = docking_folder.glob(f'gold_soln_docking_input_*_*_*.mol2')
+    docked_ligand_files = docking_folder.glob('gold_soln_docking_input_*_*_*.mol2')
 
     for docked_ligand_file in docked_ligand_files:
         docked_ligand_entries = []
@@ -594,7 +594,7 @@ def _protein_preparation(pdb, dry_receptor_file, pdb_id, target):
     target_protein = protein.Protein.from_file(str(pdb))
 
     water_atoms = [a for a in target_protein.atoms if a.protein_atom_type == 'Water' and
-                   is_important_water(a, target_protein, target) == False]
+                   is_important_water(a, target_protein, target) is False]
     ligand_atoms = [a for a in target_protein.atoms if
                     ('LIG1' in a.residue_label or a.residue_label[:3] not in protein_res_labels)]
 
@@ -779,12 +779,12 @@ def _dock(docker, dry_receptor_file, target_protein: protein.Protein, native_lig
 
 
 def _return_cis_trans_bicycle(atom):
-    atom_hydrogen = [a for a in atom.neighbours if a.is_cyclic == False][0]
+    atom_hydrogen = [a for a in atom.neighbours if a.is_cyclic is False][0]
     for neigh in atom.neighbours:
         if (len(neigh.rings) == len(atom.rings)):
             if len(neigh.neighbours) < 4:
                 return False
-            neigh_hydrogen = [a for a in neigh.neighbours if a.is_cyclic == False][0]
+            neigh_hydrogen = [a for a in neigh.neighbours if a.is_cyclic is False][0]
             if descriptors.MolecularDescriptors.atom_distance(neigh_hydrogen, atom_hydrogen) < 2.8:
                 return 'cis'
             else:
@@ -811,7 +811,7 @@ def _bicycle_cis_trans_mismatch(atom1, atom2):
 
 def _bicyclic_cis_trans_chirality(atom1, atom2):
     '''Check if the bicyclic system has cis-trans chirality.'''
-    if 1 < len(atom1.rings) == len(atom2.rings) and atom1.is_spiro == False and atom2.is_spiro == False:
+    if 1 < len(atom1.rings) == len(atom2.rings) and atom1.is_spiro is False and atom2.is_spiro is False:
         atom1_second_bridge_atom = [n for n in atom1.neighbours if len(n.rings) > 1][0]
         atom2_second_bridge_atom = [n for n in atom2.neighbours if len(n.rings) > 1][0]
         if len(atom1_second_bridge_atom.neighbours) == len(atom2_second_bridge_atom.neighbours) == 4:
@@ -899,8 +899,8 @@ def _mcs_templates_df(native_ligand_entries, ligand_mol, series_template_strucid
                  'mcs_atom_labels': [], 'mcs_object': []}
     for cnt, native_ligand_entry in enumerate(native_ligand_entries):
 
-        if series_template_strucids is not None and native_ligand_entry.attributes[
-            'STRUCID'] not in series_template_strucids:
+        if series_template_strucids is not None and \
+           native_ligand_entry.attributes['STRUCID'] not in series_template_strucids:
             continue
 
         # if native_ligand_entry.attributes['STRUCID'] == '1qhdw':
@@ -1129,8 +1129,8 @@ def gold_scaffold_docking(ligands_for_alignment, project_home, args=None):
             Path(project_home) / 'tmp_aligned_3d_sdf_sanitized/ligand_templates_for_mcs_manual.sdf')
         if pdb_ligand_df_file.is_file():
             pdb_ligand_df = pd.read_csv(pdb_ligand_df_file)
-            pdb_ligand_df = pdb_ligand_df[pdb_ligand_df['is_high_quality'] == True]
-            pdb_ligand_df = pdb_ligand_df[pdb_ligand_df['template_file'].isna() == False]
+            pdb_ligand_df = pdb_ligand_df[pdb_ligand_df['is_high_quality'] is True]
+            pdb_ligand_df = pdb_ligand_df[pdb_ligand_df['template_file'].isna() is False]
 
     series_df = Path('../../series_assignment.csv')
     if series_df.is_file():
@@ -1219,8 +1219,7 @@ def gold_scaffold_docking(ligands_for_alignment, project_home, args=None):
             for index, row in templates_df.iterrows():
                 criterion1 = row['rel_mcs_size_to_ligand'] >= rel_mcs_size_to_ligand_threshold and \
                              row['rel_mcs_size_to_native_ligand'] >= rel_mcs_size_to_native_ligand_threshold
-                criterion2 = row['abs_mcs_size'] >= 10 and \
-                             row['similarity'] >= similarity_threshold
+                criterion2 = row['abs_mcs_size'] >= 10 and row['similarity'] >= similarity_threshold
                 if index < 1 and row['abs_mcs_size'] > 5 and (criterion1 or criterion2):
                     pdb_id = row['template_strucid'].split('.')[0].lower()
                     native_ligand = row['native_ligand'].molecule
@@ -1263,7 +1262,7 @@ def gold_rescoring(ligand_file: str, protein_file: str):
 
     settings.binding_site = settings.BindingSiteFromLigand(target_protein, ligand, 10.0)
     settings.add_ligand_file(ligand_file)
-    settings.output_file = str(Path(f'./rescored_ligand.sdf'))
+    settings.output_file = str(Path('./rescored_ligand.sdf'))
 
     gold_conf = 'gold_rescoring.conf'
     settings.make_absolute_file_names(gold_conf)

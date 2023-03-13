@@ -104,7 +104,7 @@ def extend_df(df, attr, strucid=''):
 
 
 def return_contact_df_from_docking_file(docked_ligand_file, target_home='.', strucid='', pdb_file=None):
-    gold_conf = str(list(Path(docked_ligand_file).parents[0].glob(f'gold_*.conf'))[0])
+    gold_conf = str(list(Path(docked_ligand_file).parents[0].glob('gold_*.conf'))[0])
 
     if pdb_file is None:
         pdb_file = list((Path('../..') / Path('tmp_aligned_for_MOE_sanitized')).glob(f'{strucid}*.pdb'))
@@ -140,9 +140,9 @@ def return_contact_df_from_docking_file(docked_ligand_file, target_home='.', str
 
 def return_contact_df(docking_dir=''):
     if 'decoy' in str(Path(docking_dir).absolute()):
-        docked_structures = list(Path(docking_dir).glob(f'*_*/best_decoy_*.sdf'))
+        docked_structures = list(Path(docking_dir).glob('*_*/best_decoy_*.sdf'))
     else:
-        docked_structures = list(Path(docking_dir).glob(f'*_*/best_soln_*.sdf'))
+        docked_structures = list(Path(docking_dir).glob('*_*/best_soln_*.sdf'))
 
     contacts_df_list = []
     rf_count_df_list = []
