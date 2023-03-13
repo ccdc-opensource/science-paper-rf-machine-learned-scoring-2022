@@ -4,6 +4,7 @@
 
 import pandas as pd
 import numpy as np
+
 np.seterr(all="ignore")
 from scipy.optimize import least_squares
 from scipy.stats import spearmanr
@@ -11,6 +12,7 @@ from pathlib import Path
 import itertools
 import argparse
 import json
+
 
 ########################################################################################################################
 
@@ -79,7 +81,8 @@ def hbond_compensation(ligand_contacts):
 
     ligand_contacts.loc[
         (ligand_contacts['ligand_atom_symbol']).isin(['S', 'Cl', 'F', 'I']) & (
-                    ligand_contacts['rf_total'] < 1 & ligand_contacts['protein_atom_type'].isin(['O_ali_mix', 'O_pi_mix', 'Water'])), 'interaction_type'] = 'desolvation'
+                ligand_contacts['rf_total'] < 1 & ligand_contacts['protein_atom_type'].isin(
+            ['O_ali_mix', 'O_pi_mix', 'Water'])), 'interaction_type'] = 'desolvation'
 
     ligand_contacts.loc[
         (ligand_contacts['ligand_atom_symbol']).isin(['S', 'Cl', 'F', 'I']) | (ligand_contacts['los_atom_symbol']).isin(
@@ -96,7 +99,7 @@ def hbond_compensation(ligand_contacts):
 
     # Remaining hbonds are classic hbonds
     ligand_contacts.loc[(ligand_contacts['is_hbond'] == True) & (
-                ligand_contacts['ligand_atom_symbol'] != 'C'), 'interaction_type'] = 'hbond_classic'
+            ligand_contacts['ligand_atom_symbol'] != 'C'), 'interaction_type'] = 'hbond_classic'
 
     # Polarized C-H bonds make weak hbonds
     ligand_contacts.loc[(ligand_contacts['is_hbond'] == True) &
@@ -153,7 +156,8 @@ def turn_off_secondary_clash_contacts(ligand_contacts):
                                    (ligand_contacts['vdw_distance'] < -0.5)) | \
                                   ((ligand_contacts['interaction_type'] == 'hbond_classic') &
                                    (ligand_contacts['vdw_distance'] < -0.7) |
-                                   (ligand_contacts['interaction_type'].isin(['electrostatic_repulsion', 'hbond_mismatch'])) &
+                                   (ligand_contacts['interaction_type'].isin(
+                                       ['electrostatic_repulsion', 'hbond_mismatch'])) &
                                    (ligand_contacts['vdw_distance'] < -0.3)
                                    )
     secondary_clash_contact_indices = []
@@ -162,11 +166,11 @@ def turn_off_secondary_clash_contacts(ligand_contacts):
         clashing_atom_indices = df[df['is_clash']]['ligand_atom_index']
         # clashing_atom_indices = clashing_atom_indices.append(df[(df['is_hbond']==False) & (df['vdw_distance'] < -0.1)]['ligand_atom_index'])
 
-        #Get the df indices of the contacts that clash
+        # Get the df indices of the contacts that clash
         clashing_df_indices = df[df['is_clash']].index
         # clashing_df_indices = clashing_df_indices.append(df[(df['is_hbond'] == False) & (df['vdw_distance'] < -0.1)].index)
 
-        #Get the atom indices of the secondary contacts that do no clash
+        # Get the atom indices of the secondary contacts that do no clash
         clashing_atom_contact_indices = df[(df['ligand_atom_index'].isin(clashing_atom_indices)) &
                                            (df.index.isin(clashing_df_indices) == False)].index
 
@@ -218,7 +222,8 @@ def process_df(strain=['ANI_Strain'], task='pde10_h_pic50'):
     :return:
     '''
     if not Path('best_soln_contacts.csv').is_file():
-        contact_df = pd.concat(map(pd.read_csv,  Path('..').glob('docking_job_*/docked_contact_df.csv')), ignore_index=True)
+        contact_df = pd.concat(map(pd.read_csv, Path('..').glob('docking_job_*/docked_contact_df.csv')),
+                               ignore_index=True)
         contact_df = contact_df[contact_df['is_intramolecular'] == False]
         contact_df = contact_df.drop(columns=[c for c in contact_df.columns if 'Gold.Protein' in c])
         contact_df = contact_df.drop(columns=[c for c in contact_df.columns if c in ['Gold.Version',
@@ -272,7 +277,7 @@ class PlpScoring(object):
         unfav_interaction_type_groups = ['unfavorable']
         params = ['a', 'c', 'f']
         params = interaction_type_params + fav_params + [a + '_' + b for a, b in
-                                            itertools.product(unfav_interaction_type_groups, params)]
+                                                         itertools.product(unfav_interaction_type_groups, params)]
 
         self.interaction_type_groups = fav_interaction_type_groups + unfav_interaction_type_groups
 
@@ -395,7 +400,8 @@ class PlpScoring(object):
                 d = params_dict[interaction_ + '_d'] + c
                 e = params_dict[interaction_ + '_e']
 
-                interaction_indices = ligand_contact_df[ligand_contact_df['interaction_type'].isin(int_dict[interaction_])].index
+                interaction_indices = ligand_contact_df[
+                    ligand_contact_df['interaction_type'].isin(int_dict[interaction_])].index
                 rm = ligand_contact_df.loc[interaction_indices]['rm']
                 A = A.append(rm - a)
                 B = B.append(rm - b)
@@ -414,10 +420,12 @@ class PlpScoring(object):
         F_unfav = F_unfav.sort_index()
 
         # negative values represent attraction, positive values represent repulsion
-        favorable_contacts = ligand_contact_df[ligand_contact_df['interaction_type'].isin(int_dict['unfavorable']) == False].copy()
+        favorable_contacts = ligand_contact_df[
+            ligand_contact_df['interaction_type'].isin(int_dict['unfavorable']) == False].copy()
         distances = favorable_contacts['distance'].sort_index()
         clash_counts = favorable_contacts['clash_count'].sort_index()
-        favorable_contacts.loc[(distances < A), 'plp_energy'] = clash_factor*(clash_counts+1) * ((A - distances) / A) + clash_factor
+        favorable_contacts.loc[(distances < A), 'plp_energy'] = clash_factor * (clash_counts + 1) * (
+                    (A - distances) / A) + clash_factor
         favorable_contacts.loc[(distances >= A) & (distances < B), 'plp_energy'] = E * (distances - A) / (B - A)
         favorable_contacts.loc[(distances >= B) & (distances < C), 'plp_energy'] = E
         favorable_contacts.loc[(distances >= C) & (distances < D), 'plp_energy'] = E * (D - distances) / (D - C)
@@ -426,8 +434,10 @@ class PlpScoring(object):
             ligand_contact_df['interaction_type'].isin(int_dict['unfavorable']) == True].copy()
         clash_counts = unfavorable_contacts['clash_count'].sort_index()
         distances = unfavorable_contacts['distance'].sort_index()
-        unfavorable_contacts.loc[(distances < A_unfav), 'plp_energy'] = clash_factor*(clash_counts+1) * ((A_unfav - distances) / A_unfav) + clash_factor
-        unfavorable_contacts.loc[(distances >= A_unfav) & (distances < B_unfav), 'plp_energy'] = -F_unfav * (distances - A_unfav) / (B_unfav - A_unfav) + F_unfav
+        unfavorable_contacts.loc[(distances < A_unfav), 'plp_energy'] = clash_factor * (clash_counts + 1) * (
+                    (A_unfav - distances) / A_unfav) + clash_factor
+        unfavorable_contacts.loc[(distances >= A_unfav) & (distances < B_unfav), 'plp_energy'] = -F_unfav * (
+                    distances - A_unfav) / (B_unfav - A_unfav) + F_unfav
 
         ligand_contact_df = pd.concat([favorable_contacts, unfavorable_contacts])
 
@@ -441,9 +451,10 @@ class PlpScoring(object):
                 ligand_interaction_df.loc[(params_dict['hbond_rho1'] <= buriedness) &
                                           (buriedness < params_dict['hbond_rho2']), 'plp_energy'
                 ] = ligand_interaction_df['plp_energy'] * (buriedness - params_dict['hbond_rho1']) / (
-                                params_dict['hbond_rho2'] - params_dict['hbond_rho1'])
+                        params_dict['hbond_rho2'] - params_dict['hbond_rho1'])
 
-                ligand_interaction_df.loc[buriedness >= params_dict['hbond_rho2'], 'plp_energy'] = ligand_interaction_df['plp_energy']
+                ligand_interaction_df.loc[buriedness >= params_dict['hbond_rho2'], 'plp_energy'] = \
+                ligand_interaction_df['plp_energy']
 
             if interaction_type in ['pi', 'hydrophobic', 'multipolar', 'hbond_weak', 'desolvation']:
                 buriedness = ligand_interaction_df['los_atom_buriedness']
@@ -453,11 +464,9 @@ class PlpScoring(object):
                     (params_dict['lipophilic_rho1'] <= buriedness) &
                     (buriedness < params_dict['lipophilic_rho2']), 'plp_energy'
                 ] = ligand_interaction_df['plp_energy'] * (buriedness - params_dict['lipophilic_rho1']) / (
-                            params_dict['lipophilic_rho2'] - params_dict['lipophilic_rho1'])
-
+                        params_dict['lipophilic_rho2'] - params_dict['lipophilic_rho1'])
 
             ligand_contact_df.loc[ligand_interaction_df.index, 'plp_energy'] = ligand_interaction_df['plp_energy']
-
 
         # bfactor scaling
         bfactors = ligand_contact_df['relative_bfactor']
@@ -470,11 +479,15 @@ class PlpScoring(object):
 
         ligand_contact_df.loc[bfactors >= params_dict['bfactor_rho2'], 'plp_energy'] = 0
 
-        clash_contact_indices = list(unfavorable_contacts[unfavorable_contacts['distance'].lt(A_unfav)].index) + list(favorable_contacts[favorable_contacts['distance'].lt(A)].index)
+        clash_contact_indices = list(unfavorable_contacts[unfavorable_contacts['distance'].lt(A_unfav)].index) + list(
+            favorable_contacts[favorable_contacts['distance'].lt(A)].index)
 
-        for interaction_type, interaction_df in ligand_contact_df[ligand_contact_df.index.isin(clash_contact_indices) == False].groupby('interaction_type'):
-            ligand_contact_df.loc[interaction_df.index, 'plp_energy'] = interaction_df['plp_energy'] * params_dict[interaction_type + '_w']
-        ligand_contact_df.loc[ligand_contact_df.index.isin(clash_contact_indices), 'plp_energy'] = -ligand_contact_df['plp_energy']
+        for interaction_type, interaction_df in ligand_contact_df[
+            ligand_contact_df.index.isin(clash_contact_indices) == False].groupby('interaction_type'):
+            ligand_contact_df.loc[interaction_df.index, 'plp_energy'] = interaction_df['plp_energy'] * params_dict[
+                interaction_type + '_w']
+        ligand_contact_df.loc[ligand_contact_df.index.isin(clash_contact_indices), 'plp_energy'] = -ligand_contact_df[
+            'plp_energy']
         column_labels = ['ligand_file', self.task, 'pc_frozen_bonds', 'cluster'] + self.strain
         if self.gold:
             column_labels.append('Gold.PLP.Fitness')
@@ -488,13 +501,16 @@ class PlpScoring(object):
         for cnt, strain_label in enumerate(self.strain):
             prediction_df = prediction_df.astype({strain_label: float})
             if strain_label == 'ANI_Strain':
-                prediction_df['strain_penalty'] = params_dict[f'strain_weight_{cnt}'] * np.log(prediction_df[strain_label])
+                prediction_df['strain_penalty'] = params_dict[f'strain_weight_{cnt}'] * np.log(
+                    prediction_df[strain_label])
                 prediction_df['strain_penalty'] = prediction_df['strain_penalty'].replace([np.inf, -np.inf], 0)
             else:
-                prediction_df['strain_penalty'] = prediction_df['strain_penalty'] + params_dict[f'strain_weight_{cnt}'] * prediction_df[strain_label]
+                prediction_df['strain_penalty'] = prediction_df['strain_penalty'] + params_dict[
+                    f'strain_weight_{cnt}'] * prediction_df[strain_label]
 
         prediction_df['rotation_entropy_penalty'] = params_dict['rotation_entropy_w'] * prediction_df['pc_frozen_bonds']
-        prediction_df['score'] = prediction_df['plp_energy'] + prediction_df['strain_penalty'] + prediction_df['rotation_entropy_penalty']
+        prediction_df['score'] = prediction_df['plp_energy'] + prediction_df['strain_penalty'] + prediction_df[
+            'rotation_entropy_penalty']
         prediction_df.loc[prediction_df['score'] < 3, 'score'] = 3
         if return_contact_df:
             return prediction_df, ligand_contact_df
@@ -514,35 +530,40 @@ class PlpScoring(object):
 
     def optimize_weights(self, scores_df):
 
-        self.initial_guess = {"pi_w": -0.06329918369899717, "hydrophobic_w": -0.03679486613866424, "hbond_weak_w": -0.043416752578643,
-         "multipolar_w": -0.019966358787951787, "repulsive_w": -0.04166345024299469,
-         "desolvation_w": -0.009318217735359038, "hbond_classic_w": -0.2285049973821565, "ionic_w": -0.1765648797949396,
-         "favorable_lip_a": 0.09999493880055929, "favorable_lip_b": 0.39996346524216725,
-         "favorable_lip_c": 0.7999992895585842, "favorable_lip_d": 0.49999927117641335,
-         "favorable_lip_e": -1.601062326025244, "favorable_hb_a": 0.09351018567138517,
-         "favorable_hb_b": 0.26874110245376265, "favorable_hb_c": 0.4710463226463769,
-         "favorable_hb_d": 0.2947095948102579, "favorable_hb_e": -0.40114233297001367,
-         "unfavorable_a": 0.29990714415021325, "unfavorable_c": 0.5005102385721926, "hbond_rho1": 50.45643860461278,
-         "hbond_rho2": 57.452535372621725, "lipophilic_rho1": 19.205766641846076, "lipophilic_rho2": 21.41581509284962,
-         "bfactor_rho1": 0.1618446393425923, "bfactor_rho2": 0.1639701197217107,
-         "strain_weight_0": -0.0007038247138676942, "strain_weight_1": -0.11715414788931568,
-         "strain_weight_2": -5.154179015906084e-09, "rotation_entropy_w": -3.527789958418665e-06,
-         "clash_factor": 0.5011126435789334}
+        self.initial_guess = {"pi_w": -0.06329918369899717, "hydrophobic_w": -0.03679486613866424,
+                              "hbond_weak_w": -0.043416752578643,
+                              "multipolar_w": -0.019966358787951787, "repulsive_w": -0.04166345024299469,
+                              "desolvation_w": -0.009318217735359038, "hbond_classic_w": -0.2285049973821565,
+                              "ionic_w": -0.1765648797949396,
+                              "favorable_lip_a": 0.09999493880055929, "favorable_lip_b": 0.39996346524216725,
+                              "favorable_lip_c": 0.7999992895585842, "favorable_lip_d": 0.49999927117641335,
+                              "favorable_lip_e": -1.601062326025244, "favorable_hb_a": 0.09351018567138517,
+                              "favorable_hb_b": 0.26874110245376265, "favorable_hb_c": 0.4710463226463769,
+                              "favorable_hb_d": 0.2947095948102579, "favorable_hb_e": -0.40114233297001367,
+                              "unfavorable_a": 0.29990714415021325, "unfavorable_c": 0.5005102385721926,
+                              "hbond_rho1": 50.45643860461278,
+                              "hbond_rho2": 57.452535372621725, "lipophilic_rho1": 19.205766641846076,
+                              "lipophilic_rho2": 21.41581509284962,
+                              "bfactor_rho1": 0.1618446393425923, "bfactor_rho2": 0.1639701197217107,
+                              "strain_weight_0": -0.0007038247138676942, "strain_weight_1": -0.11715414788931568,
+                              "strain_weight_2": -5.154179015906084e-09, "rotation_entropy_w": -3.527789958418665e-06,
+                              "clash_factor": 0.5011126435789334}
 
         self.initial_guess = self.initial_guess.values()
 
-        scores_df = scores_df.drop(columns=[c for c in scores_df.columns if 'Gold.' in c and c not in self.strain + ['Gold.PLP.Fitness']])
+        scores_df = scores_df.drop(
+            columns=[c for c in scores_df.columns if 'Gold.' in c and c not in self.strain + ['Gold.PLP.Fitness']])
 
         from scipy.optimize import minimize
         self.minimizer = 'minimize'
         ret = minimize(self.optimization_function, method='L-BFGS-B', x0=list(self.initial_guess), args=(scores_df,),
-                       bounds=(self.bounds_dict.values()), tol=1e-03)  #, tol=1e-05
+                       bounds=(self.bounds_dict.values()), tol=1e-03)  # , tol=1e-05
 
         print('Least-squares minmization....')
         self.minimizer = 'least_squares'
         ret = least_squares(self.optimization_function, x0=ret.x, args=(scores_df,),
                             bounds=(np.array(list(self.bounds_dict.values()))[:, 0],
-                                    np.array(list(self.bounds_dict.values()))[:, 1]), ftol=1e-03)  #, ftol=1e-05
+                                    np.array(list(self.bounds_dict.values()))[:, 1]), ftol=1e-03)  # , ftol=1e-05
 
         weight_dict = {p: ret.x[cnt] for cnt, p in enumerate(self.bounds_dict.keys())}
         with open(f'weights_{self.series}.json', "w") as out_file:
@@ -567,7 +588,8 @@ def main():
     elif args.rescore and not contact_scores_files.is_file():
         # RESCORE
         print('Rescoring poses...')
-        scores_df = pd.concat([pd.read_csv(f) for f in Path('..').glob('docking_job_*/rescored_rf_contact.csv')], ignore_index=True)
+        scores_df = pd.concat([pd.read_csv(f) for f in Path('..').glob('docking_job_*/rescored_rf_contact.csv')],
+                              ignore_index=True)
         scores_df = scores_df[scores_df['RMSD_to_mcs'] < 1.5]
         ligand_files_remove = []
         for index, df in scores_df.sort_values(by='rescore', ascending=False).groupby('SRN'):
@@ -624,7 +646,8 @@ def main():
             if args.target == 'pde-10':
                 task = 'pde10_h_pic50'
             print('spearman R RF rescore', spearmanr(final_prediction_df['score'], final_prediction_df[task]))
-            print('spearman R Gold.PLP.Fitness', spearmanr(final_prediction_df['Gold.PLP.Fitness'], final_prediction_df[task]))
+            print('spearman R Gold.PLP.Fitness',
+                  spearmanr(final_prediction_df['Gold.PLP.Fitness'], final_prediction_df[task]))
 
     return
 

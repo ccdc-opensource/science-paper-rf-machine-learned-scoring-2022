@@ -14,6 +14,7 @@ from ccdc_roche.python.los_descriptors import _cut_out_binding_site_by_distance
 from ccdc.docking import Docker
 import pandas as pd
 
+
 ########################################################################################################################
 
 
@@ -65,6 +66,7 @@ def parse_args():
 
 class MCS(object):
     '''Calculate Maximum Common Substructure between ligand and template.'''
+
     def __init__(self, ligand, template):
         '''
 
@@ -290,6 +292,7 @@ class SubstitutentComparer(object):
                                 remove_atoms.extend(open_valency_neigbours)
         return remove_atoms
 
+
 # def _compare_aromatic_rings(scaffold, ligand, mcs_atoms):
 #     smarts = '[aD3]1[aD2][aD2][aD2][aD2][aD2]1'
 #     searcher = search.SubstructureSearch()
@@ -356,8 +359,10 @@ class ConformerPruner(object):
             hits = searcher.search(ligand)
             for hit in hits:
                 match_atoms = hit.match_atoms()
-                is_los = match_atoms[flagged_geometry.atom_index_1].is_in_line_of_sight(match_atoms[flagged_geometry.atom_index_2])
-                distance = descriptors.MolecularDescriptors.atom_distance(match_atoms[flagged_geometry.atom_index_1], match_atoms[flagged_geometry.atom_index_2])
+                is_los = match_atoms[flagged_geometry.atom_index_1].is_in_line_of_sight(
+                    match_atoms[flagged_geometry.atom_index_2])
+                distance = descriptors.MolecularDescriptors.atom_distance(match_atoms[flagged_geometry.atom_index_1],
+                                                                          match_atoms[flagged_geometry.atom_index_2])
                 if distance < flagged_geometry.min_distance:
                     if flagged_geometry.has_to_be_los:
                         if is_los:
@@ -368,7 +373,6 @@ class ConformerPruner(object):
 
 
 def update_gold_conf(gold_conf, water_paths=False, fixed_bonds=None, args=None):
-
     f = open(gold_conf, 'r')
     newdata = f.read()
     f.close()
@@ -457,7 +461,7 @@ def _mcs_metrics(docked_ligand_entry, scaffold):
     docked_ligand.remove_unknown_atoms()
     mcs_searcher = descriptors.MolecularDescriptors.MaximumCommonSubstructure()
     mcs_searcher.settings.check_bond_type = False
-    mcs_searcher.settings.ignore_hydrogens =True
+    mcs_searcher.settings.ignore_hydrogens = True
     mcs_searcher.settings.check_bond_count = False
     temp_docked_ligand = docked_ligand.copy()
     temp_scaffold = scaffold.copy()
@@ -498,7 +502,7 @@ def _select_best_soln(docking_folder, scaffold, row, srn, pdb_id, attributes, sc
         with io.EntryReader(str(docked_ligand_file)) as rdr:
             for docked_ligand_entry in rdr:
 
-                docked_ligand_entry, docked_ligand = _mcs_metrics(docked_ligand_entry, scaffold,)
+                docked_ligand_entry, docked_ligand = _mcs_metrics(docked_ligand_entry, scaffold, )
                 docked_ligand_entry.attributes['template_strucid'] = row['template_strucid']
                 docked_ligand_entry.attributes['rel_mcs_size_to_native_ligand'] = row['rel_mcs_size_to_native_ligand']
                 docked_ligand_entry.attributes['tanimoto_similiarity_to_native_ligand'] = row['similarity']
@@ -506,7 +510,8 @@ def _select_best_soln(docking_folder, scaffold, row, srn, pdb_id, attributes, sc
                 docked_ligand_entry.attributes.update(attributes)
                 docked_ligand_entries.append(docked_ligand_entry)
                 gold_rescore_fitness = float(docked_ligand_entry.attributes['Gold.PLP.Fitness'])
-                if gold_rescore_fitness > best_soln_fitness and not ConformerPruner().is_bad_conformer(docked_ligand_entry.molecule):
+                if gold_rescore_fitness > best_soln_fitness and not ConformerPruner().is_bad_conformer(
+                        docked_ligand_entry.molecule):
                     best_soln = docked_ligand_entry
                     best_soln_file = docked_ligand_file
                     best_soln_fitness = gold_rescore_fitness
@@ -581,7 +586,6 @@ def _select_best_decoy(docking_folder, mcs_searcher, scaffold, srn, pdb_id, refe
 
 
 def _protein_preparation(pdb, dry_receptor_file, pdb_id, target):
-
     protein_res_labels = ['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLU', 'GLN', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', 'MET',
                           'PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HOH', '']
 
@@ -625,7 +629,6 @@ def _protein_preparation(pdb, dry_receptor_file, pdb_id, target):
 
 
 def is_important_water(atom, protein, target='pde-10'):
-
     if target == 'pde-10':
         distance_searcher = descriptors.MolecularDescriptors.AtomDistanceSearch(protein)
         close_atoms = distance_searcher.atoms_within_range(atom.coordinates, 3.7)
@@ -691,7 +694,6 @@ def _fix_rotatable_bond(mcs_scaffold_bond, strict_scaffold):
 def _dock(docker, dry_receptor_file, target_protein: protein.Protein, native_ligand, ligand_filename, docking_folder,
           pdb_id, srn, water_paths, scaffold=False, strict_scaffold=False, reference_ligand_file=False,
           diverse_solutions=True, args=None) -> None:
-
     settings = docker.settings
     settings.fitness_function = 'plp'
 
@@ -729,7 +731,7 @@ def _dock(docker, dry_receptor_file, target_protein: protein.Protein, native_lig
         mcs_ligand_bonds = [b[0] for b in mcs_bonds]
         ligand_rotatable_bonds = [b for b in ligand_mol.bonds if b.is_rotatable and b not in mcs_ligand_bonds]
 
-        #fix bonds
+        # fix bonds
         for mcs_ligand_bond, mcs_scaffold_bond in mcs_bonds:
             if mcs_ligand_bond.is_rotatable:
                 if _fix_rotatable_bond(mcs_scaffold_bond, strict_scaffold):
@@ -832,7 +834,7 @@ def _compare_mcs_stereo_chemistry(scaffold, ligand, mcs_atoms) -> bool:
     '''
     :return: True if MCS have the same stereochemistry, else return False
     '''
-    #rdkit_scaffold
+    # rdkit_scaffold
     rdkit_scaffold = Chem.MolFromMol2Block(scaffold.to_string('mol2'), removeHs=False)
     params = Chem.RemoveHsParameters()
     params.removeDegreeZero = True
@@ -864,9 +866,11 @@ def _compare_mcs_stereo_chemistry(scaffold, ligand, mcs_atoms) -> bool:
         if ligand_atom_label in ligand_atom_stereo.keys():
             ligand_stereo = ligand_atom_stereo[ligand_atom_label]
         if scaffold_stereo is not None and ligand_stereo is not None and scaffold_stereo != ligand_stereo:
-            ligand_neighbours = sorted(a.atomic_symbol for a in list(itertools.chain.from_iterable(n.neighbours for n in ligand_atom.neighbours)))
+            ligand_neighbours = sorted(a.atomic_symbol for a in list(
+                itertools.chain.from_iterable(n.neighbours for n in ligand_atom.neighbours)))
             scaffold_neighbours = sorted(a.atomic_symbol for a in
-                   list(itertools.chain.from_iterable(n.neighbours for n in scaffold_atom.neighbours)))
+                                         list(itertools.chain.from_iterable(
+                                             n.neighbours for n in scaffold_atom.neighbours)))
             if len(ligand_neighbours) > len(scaffold_neighbours):
                 scaffold_atoms_stereo_mismatch.append(scaffold_atom)
             elif ligand_neighbours == scaffold_neighbours:
@@ -893,7 +897,8 @@ def _mcs_templates_df(native_ligand_entries, ligand_mol, series_template_strucid
                  'mcs_atom_labels': [], 'mcs_object': []}
     for cnt, native_ligand_entry in enumerate(native_ligand_entries):
 
-        if series_template_strucids is not None and native_ligand_entry.attributes['STRUCID'] not in series_template_strucids:
+        if series_template_strucids is not None and native_ligand_entry.attributes[
+            'STRUCID'] not in series_template_strucids:
             continue
 
         # if native_ligand_entry.attributes['STRUCID'] == '1qhdw':
@@ -904,13 +909,14 @@ def _mcs_templates_df(native_ligand_entries, ligand_mol, series_template_strucid
         mcs = MCS(ligand_mol, native_ligand_entry.molecule)
         scaffold = mcs.mcs_scaffold
         mcs_atoms = mcs.mcs_atoms
-        mcs_atom_labels = [(mcs_pair[0].label, mcs_pair[1].label) for mcs_pair in mcs_atoms if mcs_pair[0] in scaffold.atoms]
+        mcs_atom_labels = [(mcs_pair[0].label, mcs_pair[1].label) for mcs_pair in mcs_atoms if
+                           mcs_pair[0] in scaffold.atoms]
 
         mcs_size = len(scaffold.heavy_atoms)
         templates['template_strucid'].append(native_ligand_entry.attributes['STRUCID'])
         templates['abs_mcs_size'].append(mcs_size)
         temp_ligand = ligand_mol.copy()
-        templates['rel_mcs_size_to_ligand'].append(mcs_size/len(temp_ligand.heavy_atoms))
+        templates['rel_mcs_size_to_ligand'].append(mcs_size / len(temp_ligand.heavy_atoms))
         templates['rel_mcs_size_to_native_ligand'].append(mcs_size / len(native_ligand_entry.molecule.heavy_atoms))
         templates['native_ligand'].append(native_ligand_entry)
         templates['scaffold'].append(scaffold)
@@ -931,7 +937,6 @@ def _mcs_templates_df(native_ligand_entries, ligand_mol, series_template_strucid
 
 
 def _write_starting_ligand(ligand_mol, ligand_filename, docking_folder, scaffold, scaffold_filename):
-
     rdkit_scaffold = Chem.MolFromMol2Block(scaffold.to_string(), removeHs=False)
     w = Chem.SDWriter(str(scaffold_filename))
     w.write(rdkit_scaffold)
@@ -964,7 +969,8 @@ def _write_starting_ligand(ligand_mol, ligand_filename, docking_folder, scaffold
     mcs_atoms = mcs_searcher.search(ligand_mol, ccdc_input_ligand, search_step_limit=1000000)[0]
     stereo_center_pairs = [a for a in mcs_atoms if a[0].label in rdkit_ligand_stereo_dict.keys()]
     for stereo_center_pair in stereo_center_pairs:
-        if rdkit_ligand_stereo_dict[stereo_center_pair[0].label] != input_ligand_stereo_dict[stereo_center_pair[1].label]:
+        if rdkit_ligand_stereo_dict[stereo_center_pair[0].label] != input_ligand_stereo_dict[
+            stereo_center_pair[1].label]:
             print('Omega returned wrong stereo center')
             return False
     return True
@@ -978,7 +984,8 @@ def gold_decoy_docking(reference_docking_job, args=None):
     df = pd.read_csv(Path(reference_docking_job) / Path('docked_rf_count_df.csv'))
     best_solns = join_docked_rf_counts.get_best_docking_solutions(df, args.target)[0]
     best_solns = [Path(ligand_file).parent.stem for ligand_file in best_solns['ligand_file'].values]
-    reference_docking_dirs = [reference_dir for reference_dir in Path(reference_docking_job).glob('*_*') if reference_dir.stem in best_solns]
+    reference_docking_dirs = [reference_dir for reference_dir in Path(reference_docking_job).glob('*_*') if
+                              reference_dir.stem in best_solns]
     for reference_docking_dir in reference_docking_dirs:
         if reference_docking_dir.is_dir():
 
@@ -1031,7 +1038,8 @@ def _setup_docking(docking_folder, targets, pdb_id, project_home, ligand_mol, sr
         _protein_preparation(pdb, dry_receptor_file, pdb_id, target=args.target)
     with io.EntryReader(str(dry_receptor_file)) as t_rdr:
         target_protein = protein.Protein.from_entry(t_rdr[0])
-        water_paths = [str(water_path.resolve()) for water_path in dry_receptor_file.parent.glob(f'{pdb_id}_water*.mol2')]
+        water_paths = [str(water_path.resolve()) for water_path in
+                       dry_receptor_file.parent.glob(f'{pdb_id}_water*.mol2')]
         if len(water_paths) == 0:
             print('No water molecules selected for docking...')
             water_paths = False
@@ -1042,7 +1050,6 @@ def _setup_docking(docking_folder, targets, pdb_id, project_home, ligand_mol, sr
     if _write_starting_ligand(ligand_mol, ligand_filename, docking_folder,
                               strict_scaffold,
                               scaffold_filename):
-
         docker = Docker()
         diverse_solutions = True
 
@@ -1055,6 +1062,7 @@ class AutoScaleSetter(object):
     '''
     Set autoscale to 0 if there are very few rotatable bonds.
     '''
+
     def __init__(self, ligand_rotatable_bonds):
         self.ligand_rotatable_bonds = [b for b in ligand_rotatable_bonds if b.sybyl_type != 'am']
         self.autoscale = self._set_autoscale()
@@ -1080,7 +1088,6 @@ class AutoScaleSetter(object):
 
 
 def _write_best_soln_pocket(gold_conf, ligand_file):
-
     docking_settings = Docker.Settings().from_file(gold_conf)
     docking_results = Docker.Results(docking_settings)
     csd_ligand_entry = docking_results.DockedLigandReader(ligand_file, docking_settings)[0]
@@ -1116,7 +1123,8 @@ def gold_scaffold_docking(ligands_for_alignment, project_home, args=None):
 
     if args.target == 'default':
         targets = list(((Path(project_home) / Path('tmp_aligned_for_MOE_sanitized')).glob('*.pdb')))
-        template_ligands_sdf = str(Path(project_home) / 'tmp_aligned_3d_sdf_sanitized/ligand_templates_for_mcs_manual.sdf')
+        template_ligands_sdf = str(
+            Path(project_home) / 'tmp_aligned_3d_sdf_sanitized/ligand_templates_for_mcs_manual.sdf')
         if pdb_ligand_df_file.is_file():
             pdb_ligand_df = pd.read_csv(pdb_ligand_df_file)
             pdb_ligand_df = pdb_ligand_df[pdb_ligand_df['is_high_quality'] == True]
@@ -1125,7 +1133,8 @@ def gold_scaffold_docking(ligands_for_alignment, project_home, args=None):
     series_df = Path('../../series_assignment.csv')
     if series_df.is_file():
         series_df = pd.read_csv(series_df)
-        series_df = series_df[[c for c in series_df.columns if c in ['Proasis ID', 'SRN', 'series']]].rename({'Proasis ID': 'strucid'}, axis=1)
+        series_df = series_df[[c for c in series_df.columns if c in ['Proasis ID', 'SRN', 'series']]].rename(
+            {'Proasis ID': 'strucid'}, axis=1)
         pdb_ligand_df = pdb_ligand_df.join(series_df.set_index('strucid'), on='strucid')
     else:
         series_df = pd.DataFrame()
@@ -1171,106 +1180,107 @@ def gold_scaffold_docking(ligands_for_alignment, project_home, args=None):
     with io.EntryReader(str(ligands_for_alignment_sdf)) as lig_sd_rdr:
         for lig_cnt, ligand in enumerate(lig_sd_rdr):
             # try:
-                ligand_entry = lig_sd_rdr[lig_cnt]
-                if 'SRN' in ligand_entry.attributes:
-                   srn = ligand_entry.attributes['SRN'].replace(' ', '')
+            ligand_entry = lig_sd_rdr[lig_cnt]
+            if 'SRN' in ligand_entry.attributes:
+                srn = ligand_entry.attributes['SRN'].replace(' ', '')
+            else:
+                srn = ligand_entry.identifier.replace(' ', '')
+
+            print(srn)
+            series_template_strucids = None
+            if series_df.shape[0] > 1:
+                series = series_df[series_df['SRN'] == srn]['series'].values[0]
+                if series == series:
+                    series_template_strucids = pdb_ligand_df[pdb_ligand_df['series'] == series]['strucid'].values
                 else:
-                    srn = ligand_entry.identifier.replace(' ', '')
+                    continue
 
-                print(srn)
-                series_template_strucids = None
-                if series_df.shape[0] > 1:
-                    series = series_df[series_df['SRN'] == srn]['series'].values[0]
-                    if series == series:
-                        series_template_strucids = pdb_ligand_df[pdb_ligand_df['series'] == series]['strucid'].values
-                    else:
-                        continue
+            ligand_mol = ligand_entry.molecule.components[0]
 
-                ligand_mol = ligand_entry.molecule.components[0]
+            # kekulize with RDKit because it handles aromaticity better
+            rdkit_ligand = Chem.MolFromMolBlock(ligand_mol.to_string('sdf'), removeHs=False)
+            ligand_mol = ligand_mol.from_string(Chem.MolToMolBlock(rdkit_ligand))
 
-                #kekulize with RDKit because it handles aromaticity better
-                rdkit_ligand = Chem.MolFromMolBlock(ligand_mol.to_string('sdf'), removeHs=False)
-                ligand_mol = ligand_mol.from_string(Chem.MolToMolBlock(rdkit_ligand))
+            ligand_mol.normalise_labels()
+            templates_df = _mcs_templates_df(native_ligand_entries, ligand_mol, series_template_strucids)
 
-                ligand_mol.normalise_labels()
-                templates_df = _mcs_templates_df(native_ligand_entries, ligand_mol, series_template_strucids)
+            # Remove template structures that were solved after the assay date
+            if args.target == 'pde-10':
+                proasis_df = pd.read_csv('../../proasis_date.csv').astype({'DATESOLVED': 'datetime64'})
+                templates_df = templates_df.join(proasis_df.set_index('STRUCID'), on='template_strucid')
+                assay_date = ligand_entry.attributes[
+                    'PDE10_FULL_LEN_CGMP_SPA_IC50_h-PDE10A(14-779)-E.Coli-c: AP005128;Min;EXP Test Date']
+                assay_date = pd.to_datetime(assay_date)
+                templates_df = templates_df[templates_df['DATESOLVED'] < assay_date]
 
-                # Remove template structures that were solved after the assay date
-                if args.target == 'pde-10':
-                    proasis_df = pd.read_csv('../../proasis_date.csv').astype({'DATESOLVED': 'datetime64'})
-                    templates_df = templates_df.join(proasis_df.set_index('STRUCID'), on='template_strucid')
-                    assay_date = ligand_entry.attributes['PDE10_FULL_LEN_CGMP_SPA_IC50_h-PDE10A(14-779)-E.Coli-c: AP005128;Min;EXP Test Date']
-                    assay_date = pd.to_datetime(assay_date)
-                    templates_df = templates_df[templates_df['DATESOLVED'] < assay_date]
+            dock = False
+            for index, row in templates_df.iterrows():
+                criterion1 = row['rel_mcs_size_to_ligand'] >= rel_mcs_size_to_ligand_threshold and \
+                             row['rel_mcs_size_to_native_ligand'] >= rel_mcs_size_to_native_ligand_threshold
+                criterion2 = row['abs_mcs_size'] >= 10 and \
+                             row['similarity'] >= similarity_threshold
+                if index < 1 and row['abs_mcs_size'] > 5 and (criterion1 or criterion2):
+                    pdb_id = row['template_strucid'].split('.')[0].lower()
+                    native_ligand = row['native_ligand'].molecule
+                    docking_folder = Path(f'{pdb_id}_{srn}_{lig_cnt}')
+                    scaffold = row['scaffold']
+                    mcs = row['mcs_object']
+                    scaffold_filename = docking_folder / Path(f'scaffold_{srn}.sdf')
+                    strict_scaffold = \
+                        mcs.return_mcs_scaffold(partial_ring_matches_allowed=False, ignore_hydrogens=False)[0]
+                    _setup_docking(docking_folder, targets, pdb_id, project_home, ligand_mol, srn, scaffold,
+                                   scaffold_filename, native_ligand, args, strict_scaffold)
+                    _select_best_soln(docking_folder, scaffold, row, srn, pdb_id, ligand_entry.attributes,
+                                      scaffold_filename)
+                    dock = True
+            if not dock:
+                print('No suitable scaffold for ', srn)
 
-                dock = False
-                for index, row in templates_df.iterrows():
-                    criterion1 = row['rel_mcs_size_to_ligand'] >= rel_mcs_size_to_ligand_threshold and \
-                            row['rel_mcs_size_to_native_ligand'] >= rel_mcs_size_to_native_ligand_threshold
-                    criterion2 = row['abs_mcs_size'] >= 10 and \
-                                 row['similarity'] >= similarity_threshold
-                    if index < 1 and row['abs_mcs_size'] > 5 and (criterion1 or criterion2):
-                        pdb_id = row['template_strucid'].split('.')[0].lower()
-                        native_ligand = row['native_ligand'].molecule
-                        docking_folder = Path(f'{pdb_id}_{srn}_{lig_cnt}')
-                        scaffold = row['scaffold']
-                        mcs = row['mcs_object']
-                        scaffold_filename = docking_folder / Path(f'scaffold_{srn}.sdf')
-                        strict_scaffold = \
-                            mcs.return_mcs_scaffold(partial_ring_matches_allowed=False, ignore_hydrogens=False)[0]
-                        _setup_docking(docking_folder, targets, pdb_id, project_home, ligand_mol, srn, scaffold,
-                                       scaffold_filename, native_ligand, args, strict_scaffold)
-                        _select_best_soln(docking_folder, scaffold, row, srn, pdb_id, ligand_entry.attributes,
-                                              scaffold_filename)
-                        dock = True
-                if not dock:
-                    print('No suitable scaffold for ', srn)
-
-            # except Exception as e:
-            #     print(e)
-            #     continue
+        # except Exception as e:
+        #     print(e)
+        #     continue
 
 
 def gold_rescoring(ligand_file: str, protein_file: str):
-        print('rescoring......')
+    print('rescoring......')
 
-        with io.MoleculeReader(ligand_file) as rdr:
-            ligand = rdr[0]
-        ligand.add_hydrogens(mode='missing')
-        target_protein = protein.Protein.from_file(protein_file)
+    with io.MoleculeReader(ligand_file) as rdr:
+        ligand = rdr[0]
+    ligand.add_hydrogens(mode='missing')
+    target_protein = protein.Protein.from_file(protein_file)
 
-        docker = Docker()
-        settings = docker.settings
-        settings.fitness_function = None
-        settings.rescore_function = 'plp'
-        settings.write_options = ['NO_LINK_FILES', 'NO_RNK_FILES', 'NO_PLP_MOL2_FILES', 'NO_BESTRANKING_LST_FILE',
-                                  'NO_GOLD_LIGAND_MOL2_FILE', 'NO_LOG_FILES', 'NO_FIT_PTS_FILES']
-        settings._settings.set_rescore_with_simplex(False)
-        settings._settings.set_fix_protein_rotatable_bonds(True)
-        settings.add_protein_file(str(protein_file))
+    docker = Docker()
+    settings = docker.settings
+    settings.fitness_function = None
+    settings.rescore_function = 'plp'
+    settings.write_options = ['NO_LINK_FILES', 'NO_RNK_FILES', 'NO_PLP_MOL2_FILES', 'NO_BESTRANKING_LST_FILE',
+                              'NO_GOLD_LIGAND_MOL2_FILE', 'NO_LOG_FILES', 'NO_FIT_PTS_FILES']
+    settings._settings.set_rescore_with_simplex(False)
+    settings._settings.set_fix_protein_rotatable_bonds(True)
+    settings.add_protein_file(str(protein_file))
 
-        settings.binding_site = settings.BindingSiteFromLigand(target_protein, ligand, 10.0)
-        settings.add_ligand_file(ligand_file)
-        settings.output_file = str(Path(f'./rescored_ligand.sdf'))
+    settings.binding_site = settings.BindingSiteFromLigand(target_protein, ligand, 10.0)
+    settings.add_ligand_file(ligand_file)
+    settings.output_file = str(Path(f'./rescored_ligand.sdf'))
 
-        gold_conf = 'gold_rescoring.conf'
-        settings.make_absolute_file_names(gold_conf)
-        settings.write(gold_conf)
+    gold_conf = 'gold_rescoring.conf'
+    settings.make_absolute_file_names(gold_conf)
+    settings.write(gold_conf)
 
-        docker = Docker()
-        docker.settings = docker.settings.from_file(gold_conf)
-        docker.dock(file_name=gold_conf)
+    docker = Docker()
+    docker.settings = docker.settings.from_file(gold_conf)
+    docker.dock(file_name=gold_conf)
 
-        ligand_attributes = {}
-        if Path('rescored_ligand.sdf').is_file():
-            ligand_entry = io.EntryReader('rescored_ligand.sdf')[0]
-            ligand_attributes = ligand_entry.attributes
-            ligand_attributes['Gold.PLP.Chemscore.Protein.Energy'] = 0
-            ligand_entry.attributes = ligand_attributes
-            with io.EntryWriter('rescored_ligand.sdf') as w:
-                w.write(ligand_entry)
-        
-        return ligand_attributes
+    ligand_attributes = {}
+    if Path('rescored_ligand.sdf').is_file():
+        ligand_entry = io.EntryReader('rescored_ligand.sdf')[0]
+        ligand_attributes = ligand_entry.attributes
+        ligand_attributes['Gold.PLP.Chemscore.Protein.Energy'] = 0
+        ligand_entry.attributes = ligand_attributes
+        with io.EntryWriter('rescored_ligand.sdf') as w:
+            w.write(ligand_entry)
+
+    return ligand_attributes
 
 
 def main():

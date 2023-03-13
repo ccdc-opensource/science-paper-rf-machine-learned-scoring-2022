@@ -15,6 +15,7 @@ from ccdc import io
 from ccdc_roche.python import los_descriptors
 from ccdc_roche.python import rf_assignment
 
+
 ########################################################################################################################
 
 
@@ -74,7 +75,8 @@ def _group_by_template(aligned_molecules, project_home):
                 ro_number = re.split(r'[A-Z]', ro_number)[0]
                 ligand_query = 'RO' + ro_number
             pdb = pdb_ligand_df[pdb_ligand_df['ligand'] == ligand_query]['pdb'].values[0]
-            pdb = str(Path(project_home) / Path('tmp_aligned_for_MOE_sanitized') / Path(pdb).name.replace('.pdb', '_sanitized.pdb'))
+            pdb = str(Path(project_home) / Path('tmp_aligned_for_MOE_sanitized') / Path(pdb).name.replace('.pdb',
+                                                                                                          '_sanitized.pdb'))
 
             if ligand.identifier in conformer_count.keys():
                 ligand.attributes['conformer'] = conformer_count[ligand.identifier]
@@ -104,8 +106,6 @@ def extend_df(df, attr, strucid=''):
 
 
 def return_contact_df_from_docking_file(docked_ligand_file, target_home='.', strucid='', pdb_file=None):
-
-
     gold_conf = str(list(Path(docked_ligand_file).parents[0].glob(f'gold_*.conf'))[0])
 
     if pdb_file is None:
@@ -122,11 +122,12 @@ def return_contact_df_from_docking_file(docked_ligand_file, target_home='.', str
     assigner.ligand_file = str(docked_ligand_file)
     describer = assigner.describer
     mol_contact_df = assigner.rf_assignments
-    mol_contact_df = mol_contact_df.drop(columns=[c for c in mol_contact_df.columns if 'Gold.Protein' in c and c != 'Gold.PLP.Chemscore.Protein.Energy'])
+    mol_contact_df = mol_contact_df.drop(
+        columns=[c for c in mol_contact_df.columns if 'Gold.Protein' in c and c != 'Gold.PLP.Chemscore.Protein.Energy'])
     mol_contact_df = mol_contact_df.join(
         assigner.describer.bfactor_df[['normalised_atom_label', 'relative_bfactor']].set_index(
             'normalised_atom_label'), on='los_atom_label')
-    
+
     rf_count_df = los_descriptors.rf_count_df(mol_contact_df, describer.csd_ligand)
     rf_count_df['rotatable_bonds_num'] = assigner.rotatable_bonds_num
     rf_count_df['frozen_bonds_num'] = assigner.frozen_bonds_num
@@ -144,7 +145,7 @@ def return_contact_df(docking_dir=''):
         docked_structures = list(Path(docking_dir).glob(f'*_*/best_decoy_*.sdf'))
     else:
         docked_structures = list(Path(docking_dir).glob(f'*_*/best_soln_*.sdf'))
-    
+
     contacts_df_list = []
     rf_count_df_list = []
 
@@ -166,11 +167,13 @@ def main():
         contact_df, rf_count_df = return_contact_df(args.docking_dir)
 
         rf_count_df.columns = [str(c) for c in rf_count_df.columns]
-        rf_count_df = rf_count_df.drop(columns=[c for c in rf_count_df.columns if 'Gold.Protein' in c or 'Gold.Chemscore.Hbonds' in c])
+        rf_count_df = rf_count_df.drop(
+            columns=[c for c in rf_count_df.columns if 'Gold.Protein' in c or 'Gold.Chemscore.Hbonds' in c])
         rf_count_df.to_csv(str(Path(args.docking_dir) / Path('docked_rf_count_df.csv')), index=False)
 
         contact_df.columns = [str(c) for c in contact_df.columns]
-        contact_df = contact_df.drop(columns=[c for c in contact_df.columns if 'Gold.Protein' in c or 'Gold.Chemscore.Hbonds' in c])
+        contact_df = contact_df.drop(
+            columns=[c for c in contact_df.columns if 'Gold.Protein' in c or 'Gold.Chemscore.Hbonds' in c])
         contact_df.to_csv(str(Path(args.docking_dir) / Path('docked_contact_df.csv')), index=False)
 
     print('finished')
