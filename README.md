@@ -60,7 +60,6 @@ moeweb -load /rf_scoring/soap_scoring_client.svl -load /template_docking/soap_te
 - Adapt the SVL scripts to point to the webserver: \
 `const SERVER_URL = 'server address';`
 
-
 ---
 
 **Scoring in MOE** \
