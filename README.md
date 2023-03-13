@@ -13,6 +13,7 @@ templates in 3D. Manual curation of the templates is highly recommended to ensur
 structures
 - [docking_home]/tmp_aligned_for_MOE_sanitized/*.pdb \
 contains aligned protein structures from MOE projects
+
 ```
 mkdir docking
 cd docking
