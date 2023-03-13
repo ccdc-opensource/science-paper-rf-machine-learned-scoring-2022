@@ -1,10 +1,11 @@
-# science-paper-rf-machine-learned-scoring-2022
+# science-paper-rf-machine-learned-scoring-2022 
 
-Docking and scoring workflows
+# Docking and scoring workflows
 
 ---
 
-**Template based docking using the GOLD:**\
+## Template based docking using GOLD
+
 To setup a docking run, generate the following files and folders:
 
 - [docking_home]/tmp_aligned_3d_sdf_sanitized/ligand_templates_for_mcs_manual.sdf \
@@ -23,18 +24,21 @@ join_docked_rf_counts.py -t [target]
 ```
 
 ---
-**Template based docking in Python**
+
+## Template based docking in Python
+
 `docking.py --input_ligands ligands.sdf -t default -fr=Met713 Met712`
 
 ---
-**Template based docking from MOE**
+
+## Template based docking from MOE
 One can either dock into one of the prepared projects or into an MDB of binding sites.
 The binding sites MDB should have the same structure as a Roche Projects DB.
 If one of the defined projects is selected, the return results will include the RF Score.
 
 ---
 
-**Generating project specific parameters:**
+## Generating project specific parameters
 
 - Series definitions are stored in rf_scoring/series_definitions/[target].json
 
@@ -48,7 +52,7 @@ ccdc_roche_scoring/stat_potential.py -t pde-10
 
 ---
 
-**Applications for MOE**
+## Applications for MOE
 
 - Start a webserver:
 
@@ -62,6 +66,7 @@ moeweb -load /rf_scoring/soap_scoring_client.svl -load /template_docking/soap_te
 
 ---
 
-**Scoring in MOE** \
+## Scoring in MOE
+
 Score an MDB of ligand poses for the active protein.
 ---
