@@ -19,12 +19,11 @@ from rdkit import Chem
 
 
 def parse_args():
-    '''Define and parse the arguments to the script.'''
+    """
+    Define and parse the arguments to the script.
+    """
     parser = argparse.ArgumentParser(
-        description=
-        """
-        Execute Line of sight contact scripts.
-        """,
+        description='Execute Line of sight contact scripts.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter  # To display default values in help message.
     )
 
@@ -65,15 +64,17 @@ def parse_args():
 
 
 class MCS(object):
-    '''Calculate Maximum Common Substructure between ligand and template.'''
-
+    """
+    Calculate Maximum Common Substructure between ligand and template.
+    """
     def __init__(self, ligand, template):
-        '''
+        """
+        Initialize the class
 
         :param ligand:
         :param template:
         :param strict_mcs Set to True if a stricter MCS should be calculated. :
-        '''
+        """
         self.ligand = ligand
         self.template = template
         self.mcs_scaffold, self.mcs_atoms, self.mcs_bonds = self.return_mcs_scaffold()
@@ -175,6 +176,7 @@ class MCS(object):
         while remove_atoms:
             scaffold.remove_atoms(remove_atoms)
             max_component_size = 0
+            max_component = None
             if scaffold.atoms:
                 for c in scaffold.components:
                     c_size = len(c.atoms)
@@ -200,10 +202,10 @@ class MCS(object):
         return scaffold, mcs_atoms, mcs_bonds
 
     def _mcs_partial_ring_match(self, mcs_atoms):
-        '''
+        """
         :param mcs_atoms:
         :return: List of atoms that have different ring attributes.
-        '''
+        """
         remove_atoms = []
         for mcs_pair in mcs_atoms:
             atom0 = mcs_pair[0]
@@ -257,13 +259,13 @@ class SubstitutentComparer(object):
         self.smarts_dict = {'amide': 'C(=O)N'}
 
     def compare(self, ligand, mcs_atoms):
-        '''
+        """
         Return atoms that should be removed from strict MCS because their number of heavy atom neighbours is
         different from ligand. Also removes partially matched amide carbonyls.
         :param ligand:
         :param mcs_atoms:
         :return: list of atoms
-        '''
+        """
         remove_atoms = []
         for substructure in self.smarts_dict:
             smarts = self.smarts_dict[substructure]

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-'''
+"""
 Generate binding sites by doing an MCS alignment of project data to available crystal structures.
-'''
+"""
 
 ########################################################################################################################
 
@@ -20,12 +20,9 @@ from pathlib import Path
 
 
 def parse_args():
-    '''Define and parse the arguments to the script.'''
+    """Define and parse the arguments to the script."""
     parser = argparse.ArgumentParser(
-        description=
-        """
-        Execute Line of sight contact scripts.
-        """,
+        description='Execute Line of sight contact scripts.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter  # To display default values in help message.
     )
 
@@ -58,12 +55,12 @@ def parse_args():
 
 
 def _group_by_template(aligned_molecules, project_home):
-    '''
+    """
     Assign aligned ligands to the template's strucid.
     :param aligned_molecules:
     :param pdb_ligand_file:
     :return:
-    '''
+    """
     conformer_count = {}
     pdb_ligand_df = pd.read_csv(Path(project_home) / Path('pdb_ligand.csv'))
     with io.EntryReader(aligned_molecules) as rdr:
@@ -75,9 +72,9 @@ def _group_by_template(aligned_molecules, project_home):
                 ro_number = re.split(r'[A-Z]', ro_number)[0]
                 ligand_query = 'RO' + ro_number
             pdb = pdb_ligand_df[pdb_ligand_df['ligand'] == ligand_query]['pdb'].values[0]
-            pdb = str(Path(project_home) / Path('tmp_aligned_for_MOE_sanitized') / Path(pdb).name.replace('.pdb',
-                                                                                                          '_sanitized.pdb'))
-
+            pdb = str(Path(project_home) /
+                      Path('tmp_aligned_for_MOE_sanitized') /
+                      Path(pdb).name.replace('.pdb', '_sanitized.pdb'))
             if ligand.identifier in conformer_count.keys():
                 ligand.attributes['conformer'] = conformer_count[ligand.identifier]
                 conformer_count[ligand.identifier] += 1
@@ -93,12 +90,13 @@ def _group_by_template(aligned_molecules, project_home):
 
 
 def extend_df(df, attr, strucid=''):
-    '''
+    """
     Add additional columns to Data Frame
     :param df: Dataframe to be extended
     :param attr: Dictionary with additional columns.
+    :param strucid: the identifier of the structure (empty by default)
     :return:
-    '''
+    """
     df['identifier'] = strucid
     for a in attr:
         df[a] = attr[a]
@@ -132,7 +130,7 @@ def return_contact_df_from_docking_file(docked_ligand_file, target_home='.', str
     rf_count_df['rotatable_bonds_num'] = assigner.rotatable_bonds_num
     rf_count_df['frozen_bonds_num'] = assigner.frozen_bonds_num
     rf_score = np.log(
-        mol_contact_df[(mol_contact_df['rf_total'] > 0) & (mol_contact_df['is_intramolecular'] == False)][
+        mol_contact_df[(mol_contact_df['rf_total'] > 0) & (mol_contact_df['is_intramolecular'] is False)][
             'rf_total']).sum()
     rf_count_df['rf_score'] = rf_score
     rf_count_df = extend_df(rf_count_df, describer.csd_ligand_entry.attributes, strucid)
