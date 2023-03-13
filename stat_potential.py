@@ -2,28 +2,25 @@
 
 ########################################################################################################################
 
+import argparse
+import itertools
+import json
 import numpy as np
 import pandas as pd
-
-np.seterr(all="ignore")
+from pathlib import Path
 from scipy.optimize import least_squares
 from scipy.stats import spearmanr
-from pathlib import Path
-import itertools
-import argparse
-import json
+
+np.seterr(all="ignore")
 
 
 ########################################################################################################################
 
 
 def parse_args():
-    '''Define and parse the arguments to the script.'''
+    """Define and parse the arguments to the script."""
     parser = argparse.ArgumentParser(
-        description=
-        """
-        Optimize parameters for RF-PLP scoring function.
-        """,
+        description='Optimize parameters for RF-PLP scoring function.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter  # To display default values in help message.
     )
 
@@ -61,11 +58,11 @@ def parse_args():
 
 
 def hbond_compensation(ligand_contacts):
-    '''
+    """
     compensate hbonds for implicit hydrogen treatment
     :param ligand_contacts DataFrame:
     :return ligand_contacts DataFrame:
-    '''
+    """
 
     # halogens and sulfur making contact to "mix" or "Water" atom types receive desolvation penalty
     ligand_contacts.loc[
@@ -84,15 +81,14 @@ def hbond_compensation(ligand_contacts):
                 ligand_contacts['rf_total'] < 1 & ligand_contacts['protein_atom_type'].isin(
             ['O_ali_mix', 'O_pi_mix', 'Water'])), 'interaction_type'] = 'desolvation'
 
-    ligand_contacts.loc[
-        (ligand_contacts['ligand_atom_symbol']).isin(['S', 'Cl', 'F', 'I']) | (ligand_contacts['los_atom_symbol']).isin(
-            ['S', 'Cl', 'F', 'I']), 'is_hbond'] = 0
+    ligand_contacts.loc[(ligand_contacts['ligand_atom_symbol']).isin(['S', 'Cl', 'F', 'I']) |
+                        (ligand_contacts['los_atom_symbol']).isin(['S', 'Cl', 'F', 'I']), 'is_hbond'] = 0
 
     # Classic hbond donors/acceptors that do not make an explicit hbond receive a penalty and are recategorised
     ligand_contacts.loc[(ligand_contacts['interaction_type'] == 'hbond_classic') &
                         (ligand_contacts['is_hbond'] is False) &
-                        (ligand_contacts['protein_atom_type'].isin(['O_ali_mix', 'O_pi_mix', 'Water'])), 'rf_total'
-    ] = ligand_contacts['rf_total'] - 1
+                        (ligand_contacts['protein_atom_type'].isin(['O_ali_mix', 'O_pi_mix', 'Water'])), 'rf_total'] = \
+        ligand_contacts['rf_total'] - 1
     ligand_contacts.loc[(ligand_contacts['is_hbond'] is False) &
                         (ligand_contacts['interaction_type'] == 'hbond_classic') &
                         (ligand_contacts['is_hbond_mismatch'] is False), 'interaction_type'] = 'desolvation'
@@ -140,8 +136,8 @@ def hbond_compensation(ligand_contacts):
                         'rf_total'] = ligand_contacts['rf_total'] + 1
 
     ligand_contacts.loc[(ligand_contacts['interaction_type'] == 'hbond_classic') &
-                        (ligand_contacts['ligand_atom_type'].str.contains('alcohol')), 'rf_total'] = ligand_contacts[
-                                                                                                         'rf_total'] + 0.8
+                        (ligand_contacts['ligand_atom_type'].str.contains('alcohol')), 'rf_total'] = \
+        ligand_contacts['rf_total'] + 0.8
     ligand_contacts.loc[(ligand_contacts['interaction_type'] == 'hbond_weak') &
                         (ligand_contacts['is_hbond'] is True) &
                         (ligand_contacts['protein_atom_type'].isin(['O_ali_mix', 'O_pi_mix', 'Water'])),
@@ -449,8 +445,8 @@ class PlpScoring(object):
                 ligand_interaction_df.loc[buriedness < params_dict['hbond_rho1'], 'plp_energy'] = 0
 
                 ligand_interaction_df.loc[(params_dict['hbond_rho1'] <= buriedness) &
-                                          (buriedness < params_dict['hbond_rho2']), 'plp_energy'
-                ] = ligand_interaction_df['plp_energy'] * (buriedness - params_dict['hbond_rho1']) / (
+                                          (buriedness < params_dict['hbond_rho2']), 'plp_energy' ] = \
+                    ligand_interaction_df['plp_energy'] * (buriedness - params_dict['hbond_rho1']) / (
                         params_dict['hbond_rho2'] - params_dict['hbond_rho1'])
 
                 ligand_interaction_df.loc[buriedness >= params_dict['hbond_rho2'], 'plp_energy'] = \
@@ -486,8 +482,8 @@ class PlpScoring(object):
             ligand_contact_df.index.isin(clash_contact_indices) is False].groupby('interaction_type'):
             ligand_contact_df.loc[interaction_df.index, 'plp_energy'] = interaction_df['plp_energy'] * params_dict[
                 interaction_type + '_w']
-        ligand_contact_df.loc[ligand_contact_df.index.isin(clash_contact_indices), 'plp_energy'] = -ligand_contact_df[
-            'plp_energy']
+        ligand_contact_df.loc[ligand_contact_df.index.isin(clash_contact_indices), 'plp_energy'] = \
+            -ligand_contact_df['plp_energy']
         column_labels = ['ligand_file', self.task, 'pc_frozen_bonds', 'cluster'] + self.strain
         if self.gold:
             column_labels.append('Gold.PLP.Fitness')
