@@ -970,9 +970,8 @@ def _write_starting_ligand(ligand_mol, ligand_filename, docking_folder, scaffold
     mcs_searcher.settings.ignore_hydrogens = True
     mcs_atoms = mcs_searcher.search(ligand_mol, ccdc_input_ligand, search_step_limit=1000000)[0]
     stereo_center_pairs = [a for a in mcs_atoms if a[0].label in rdkit_ligand_stereo_dict.keys()]
-    for stereo_center_pair in stereo_center_pairs:
-        if rdkit_ligand_stereo_dict[stereo_center_pair[0].label] != input_ligand_stereo_dict[
-            stereo_center_pair[1].label]:
+    for scp in stereo_center_pairs:
+        if rdkit_ligand_stereo_dict[scp[0].label] != input_ligand_stereo_dict[scp[1].label]:
             print('Omega returned wrong stereo center')
             return False
     return True

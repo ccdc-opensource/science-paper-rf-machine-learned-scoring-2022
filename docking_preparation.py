@@ -139,9 +139,9 @@ def _sanitize_pdb_files(target='pde-10'):
                 p.remove_unknown_atoms()
                 p.kekulize()
                 p.standardise_aromatic_bonds()
-                for l in p.ligands:
-                    if 'PO4' in l.identifier:
-                        p.remove_ligand(l.identifier)
+                for lig in p.ligands:
+                    if 'PO4' in lig.identifier:
+                        p.remove_ligand(lig.identifier)
                 m = Chem.MolFromMol2Block(p.to_string('mol2'))
 
         sanitized_file = sanitized_path / Path(pdb_file.name.replace('.pdb', '_sanitized.pdb'))
@@ -181,8 +181,8 @@ def _get_binding_site_residues(target='pde-10'):
                         ligand = ligands[0]
                     if not 9 < len(ligand.atoms) < 500:  # kick out fragments and covalently bound ligands
                         continue
-                    for l in p.ligands:
-                        p.remove_ligand(l.identifier)
+                    for lig in p.ligands:
+                        p.remove_ligand(lig.identifier)
                     for a in p.atoms:
                         if a.residue_label[:3] == ligname:
                             p.remove_atoms([a])
@@ -205,7 +205,7 @@ def _export_ligands(target='pde-10'):
     if not protein_out.is_dir():
         protein_out.mkdir()
     pdb_ligand_df = pd.read_csv('pdb_ligand.csv')
-    ligand_ids = list(pdb_ligand_df['ligand'].unique())
+    #ligand_ids = list(pdb_ligand_df['ligand'].unique())
     protein_files = Path('final_pdb_files').glob('*.pdb')
     for cnt, protein_file in enumerate(protein_files):
 
@@ -217,17 +217,17 @@ def _export_ligands(target='pde-10'):
         ligand_name = pdb_ligand_df[pdb_ligand_df['strucid'] == strucid]['ligand'].values[0]
         ccdc_protein = protein.Protein.from_file(protein_file_str)
         ligands = []
-        for l in ccdc_protein.ligands:
+        for lig in ccdc_protein.ligands:
             for id in ['LIG', 'L0R', 'UNL', '5M9']:
-                if id in l.identifier:
-                    ligands.append(l)
+                if id in lig.identifier:
+                    ligands.append(lig)
         ligand = ligands[0].components[0].copy()
         print('removing...')
         for r in ccdc_protein.residues:
             if r.chain_identifier != 'A' and r.atoms[0].protein_atom_type == 'Amino_acid':
                 ccdc_protein.remove_residue(r.identifier)
-        for l in ccdc_protein.ligands:
-            ccdc_protein.remove_ligand(l.identifier)
+        for lig in ccdc_protein.ligands:
+            ccdc_protein.remove_ligand(lig.identifier)
         ccdc_protein.add_ligand(ligand)
         ccdc_protein.remove_unknown_atoms()
         ccdc_protein.remove_all_metals()
