@@ -35,6 +35,7 @@ join_docked_rf_counts.py -t [target]
 
 ### Template based docking from MOE.
 
+
 One can either dock into one of the prepared projects or into an MDB of binding sites.
 The binding sites MDB should have the same structure as a Roche Projects DB.
 If one of the defined projects is selected, the return results will include the RF Score.
