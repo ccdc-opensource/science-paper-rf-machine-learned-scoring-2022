@@ -14,7 +14,7 @@ structures
 - [docking_home]/tmp_aligned_for_MOE_sanitized/*.pdb \
 contains aligned protein structures from MOE projects
 
-```
+```bash
 mkdir docking
 cd docking
 bsub < dock.sh
@@ -38,7 +38,7 @@ If one of the defined projects is selected, the return results will include the 
 
 - Series definitions are stored in rf_scoring/series_definitions/[target].json
 
-```
+```bash
 # Change to your docking directory 
 cd /path/to/docking_dir
 
@@ -52,7 +52,7 @@ ccdc_roche_scoring/stat_potential.py -t pde-10
 
 - Start a webserver:
 
-```
+```bash
 # LOAD ENV
 moeweb -load /rf_scoring/soap_scoring_client.svl -load /template_docking/soap_template_docking_client.svl 
 ```
