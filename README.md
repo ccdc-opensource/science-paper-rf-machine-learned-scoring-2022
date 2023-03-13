@@ -34,6 +34,7 @@ If one of the defined projects is selected, the return results will include the 
 ---
 
 **Generating project specific parameters:**
+
 - Series definitions are stored in rf_scoring/series_definitions/[target].json
 
 ```
