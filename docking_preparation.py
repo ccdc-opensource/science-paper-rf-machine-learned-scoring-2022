@@ -205,7 +205,7 @@ def _export_ligands(target='pde-10'):
     if not protein_out.is_dir():
         protein_out.mkdir()
     pdb_ligand_df = pd.read_csv('pdb_ligand.csv')
-    #ligand_ids = list(pdb_ligand_df['ligand'].unique())
+    # ligand_ids = list(pdb_ligand_df['ligand'].unique())
     protein_files = Path('final_pdb_files').glob('*.pdb')
     for cnt, protein_file in enumerate(protein_files):
 

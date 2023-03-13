@@ -11,19 +11,14 @@ import pandas as pd
 import sys
 from ccdc import io
 from pathlib import Path
-from rdkit.Chem import PandasTools
-
 
 ########################################################################################################################
 
 
 def parse_args():
-    '''Define and parse the arguments to the script.'''
+    """Define and parse the arguments to the script."""
     parser = argparse.ArgumentParser(
-        description=
-        """
-        Execute Line of sight contact scripts.
-        """,
+        description= 'Execute Line of sight contact scripts.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter  # To display default values in help message.
     )
 

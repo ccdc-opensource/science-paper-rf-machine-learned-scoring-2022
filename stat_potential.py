@@ -77,9 +77,10 @@ def hbond_compensation(ligand_contacts):
         'rf_total'] = ligand_contacts['rf_total'] - 0.5
 
     ligand_contacts.loc[
-        (ligand_contacts['ligand_atom_symbol']).isin(['S', 'Cl', 'F', 'I']) & (
-                ligand_contacts['rf_total'] < 1 & ligand_contacts['protein_atom_type'].isin(
-            ['O_ali_mix', 'O_pi_mix', 'Water'])), 'interaction_type'] = 'desolvation'
+        (ligand_contacts['ligand_atom_symbol']).isin(['S', 'Cl', 'F', 'I']) &
+        (ligand_contacts['rf_total'] < 1 &
+         ligand_contacts['protein_atom_type'].isin(['O_ali_mix', 'O_pi_mix', 'Water'])), 'interaction_type'] = \
+        'desolvation'
 
     ligand_contacts.loc[(ligand_contacts['ligand_atom_symbol']).isin(['S', 'Cl', 'F', 'I']) |
                         (ligand_contacts['los_atom_symbol']).isin(['S', 'Cl', 'F', 'I']), 'is_hbond'] = 0
@@ -445,7 +446,7 @@ class PlpScoring(object):
                 ligand_interaction_df.loc[buriedness < params_dict['hbond_rho1'], 'plp_energy'] = 0
 
                 ligand_interaction_df.loc[(params_dict['hbond_rho1'] <= buriedness) &
-                                          (buriedness < params_dict['hbond_rho2']), 'plp_energy' ] = \
+                                          (buriedness < params_dict['hbond_rho2']), 'plp_energy'] = \
                     ligand_interaction_df['plp_energy'] * (buriedness - params_dict['hbond_rho1']) / (
                         params_dict['hbond_rho2'] - params_dict['hbond_rho1'])
 
@@ -478,8 +479,8 @@ class PlpScoring(object):
         clash_contact_indices = list(unfavorable_contacts[unfavorable_contacts['distance'].lt(A_unfav)].index) + list(
             favorable_contacts[favorable_contacts['distance'].lt(A)].index)
 
-        for interaction_type, interaction_df in ligand_contact_df[
-            ligand_contact_df.index.isin(clash_contact_indices) is False].groupby('interaction_type'):
+        for interaction_type, interaction_df in \
+            ligand_contact_df[ligand_contact_df.index.isin(clash_contact_indices) is False].groupby('interaction_type'):
             ligand_contact_df.loc[interaction_df.index, 'plp_energy'] = interaction_df['plp_energy'] * params_dict[
                 interaction_type + '_w']
         ligand_contact_df.loc[ligand_contact_df.index.isin(clash_contact_indices), 'plp_energy'] = \

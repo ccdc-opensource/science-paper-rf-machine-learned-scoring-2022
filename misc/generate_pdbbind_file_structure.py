@@ -4,9 +4,12 @@ import argparse
 import pandas as pd
 from ccdc import io, docking
 from ccdc_roche.python.los_descriptors import _cut_out_binding_site_by_distance
-from functools import partial
+# If you reenable some commented code below you will need this
+# from functools import partial
 from pathlib import Path
-from pathos.multiprocessing import ProcessingPool
+
+# And this
+# from pathos.multiprocessing import ProcessingPool
 
 
 ########################################################################################################################
@@ -65,8 +68,8 @@ def write_pdb_files(iteritem):
 
 
 def main():
-    args = parse_args()
-    best_docked_df = pd.read_csv('docked_rf_count_best_docked.csv')
+    # args = parse_args()
+    # best_docked_df = pd.read_csv('docked_rf_count_best_docked.csv')
     folder = Path(f'../pde-10_pdb_bind_format')
     if not folder.is_dir():
         folder.mkdir()

@@ -3,18 +3,18 @@
 import argparse
 import openeye
 import time
-from openeye.oechem import *
-from openeye.oeomega import *
-from openeye.oeshape import *
+
+from openeye.oechem import OESetSDData, OEGetSDDataPairs, OEGraphMol, OESuppressHydrogens, OEAddExplicitHydrogens, \
+    OEWriteMolecule, OEReadMolecule
+# from openeye.oeomega import *
+from openeye.oeshape import OEColorForceField, OEColorFFType_ExplicitMillsDean, OEColorOptions, OEOverlapPrep, \
+    OEOverlapResults, OERemoveColorAtoms, OEExactColorFunc, OEOverlapFunc
 
 
 def parse_args():
-    '''Define and parse the arguments to the script.'''
+    """Define and parse the arguments to the script."""
     parser = argparse.ArgumentParser(
-        description=
-        """
-        Execute Line of sight contact scripts.
-        """,
+        description='Execute Line of sight contact scripts.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter  # To display default values in help message.
     )
 
@@ -48,12 +48,12 @@ class Rescorer(object):
         self.func = OEOverlapFunc(OEExactColorFunc(options))
 
     def is_similar(self, m, _diverse_confs):
-        '''
+        """
         Make sure that conformation is sufficiently different from those already saved
         :param m:
-        :param diverse_confs:
+        :param _diverse_confs:
         :return:
-        '''
+        """
         res = OEOverlapResults()
         conf_is_similar = False
         for diverse_conf in _diverse_confs:
@@ -65,14 +65,14 @@ class Rescorer(object):
         return conf_is_similar
 
     def rescore_and_write(self, templates, dmols, nmax, ofs):
-        '''
+        """
         molecules are rescored with ROCS to make sure the non-matched parts overlap as well as possible
         :param templates:
         :param dmols:
         :param nmax:
         :param ofs:
         :return:
-        '''
+        """
 
         # colorFunc = OEAnalyticColorFunc()
         t1 = time.time()

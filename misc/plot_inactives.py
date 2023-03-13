@@ -30,15 +30,15 @@ def main():
     df = df.reset_index(drop=True)
     for t, strucid_df in df.groupby(['strucid', 'scoring_function']):
         strucid, scoring_function = t
-        parent_pred = strucid_df[strucid_df['is_parent'] == True]['prediction'].values[0]
+        parent_pred = strucid_df[strucid_df['is_parent'] is True]['prediction'].values[0]
         df.loc[strucid_df.index, 'parent_prediction'] = parent_pred
 
     df['pIC50 change'] = df['prediction'] - df['parent_prediction']
     df.loc[df['ligand_id'].str.contains('intra'), 'category'] = 'strain'
     df.loc[df['ligand_id'].str.contains('inter'), 'category'] = 'clash'
-    df.loc[(df['ligand_id'].str.contains('inter') == False) & (
-            df['ligand_id'].str.contains('intra') == False), 'category'] = 'contact'
-    df = df[df['is_parent'] == False]
+    df.loc[(df['ligand_id'].str.contains('inter') is False) & (
+            df['ligand_id'].str.contains('intra') is False), 'category'] = 'contact'
+    df = df[df['is_parent'] is False]
 
     proasis_pdb_df = pd.read_csv('../proasis_pdb.csv')
     df = df.join(proasis_pdb_df.set_index('Label'), on='strucid')
