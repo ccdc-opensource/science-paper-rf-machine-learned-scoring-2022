@@ -90,28 +90,28 @@ def hbond_compensation(ligand_contacts):
 
     # Classic hbond donors/acceptors that do not make an explicit hbond receive a penalty and are recategorised
     ligand_contacts.loc[(ligand_contacts['interaction_type'] == 'hbond_classic') &
-                        (ligand_contacts['is_hbond'] == False) &
+                        (ligand_contacts['is_hbond'] is False) &
                         (ligand_contacts['protein_atom_type'].isin(['O_ali_mix', 'O_pi_mix', 'Water'])), 'rf_total'
     ] = ligand_contacts['rf_total'] - 1
-    ligand_contacts.loc[(ligand_contacts['is_hbond'] == False) &
+    ligand_contacts.loc[(ligand_contacts['is_hbond'] is False) &
                         (ligand_contacts['interaction_type'] == 'hbond_classic') &
-                        (ligand_contacts['is_hbond_mismatch'] == False), 'interaction_type'] = 'desolvation'
+                        (ligand_contacts['is_hbond_mismatch'] is False), 'interaction_type'] = 'desolvation'
 
     # Remaining hbonds are classic hbonds
-    ligand_contacts.loc[(ligand_contacts['is_hbond'] == True) & (
+    ligand_contacts.loc[(ligand_contacts['is_hbond'] is True) & (
             ligand_contacts['ligand_atom_symbol'] != 'C'), 'interaction_type'] = 'hbond_classic'
 
     # Polarized C-H bonds make weak hbonds
-    ligand_contacts.loc[(ligand_contacts['is_hbond'] == True) &
+    ligand_contacts.loc[(ligand_contacts['is_hbond'] is True) &
                         (ligand_contacts['ligand_atom_symbol'] == 'C') &
                         ((ligand_contacts['ligand_atom_type'].str.contains('polarized')) |
                          (ligand_contacts['ligand_atom_type'].str.contains('aromatic'))),
                         'interaction_type'] = 'hbond_weak'
-    ligand_contacts.loc[(ligand_contacts['is_hbond'] == True) &
+    ligand_contacts.loc[(ligand_contacts['is_hbond'] is True) &
                         (ligand_contacts['los_atom_symbol'] == 'C'), 'interaction_type'] = 'hbond_weak'
 
     # Polarized C-H...Donor are hbond-mismatch
-    ligand_contacts.loc[(ligand_contacts['is_hbond'] == False) &
+    ligand_contacts.loc[(ligand_contacts['is_hbond'] is False) &
                         (ligand_contacts['ligand_atom_symbol'] == 'C') &
                         (ligand_contacts['ligand_atom_type'].str.contains('aromatic')) &
                         (ligand_contacts['rf_total'] < 0.8) &
@@ -121,7 +121,7 @@ def hbond_compensation(ligand_contacts):
                         'interaction_type'] = 'hbond_mismatch'
 
     # Polarized C-H...Donor are hbond-mismatch
-    ligand_contacts.loc[(ligand_contacts['is_hbond'] == False) &
+    ligand_contacts.loc[(ligand_contacts['is_hbond'] is False) &
                         (ligand_contacts['ligand_atom_symbol'] == 'C') &
                         (ligand_contacts['ligand_atom_type'].str.contains('aromatic')) &
                         (ligand_contacts['rf_total'] < 0.8) &
@@ -143,7 +143,7 @@ def hbond_compensation(ligand_contacts):
                         (ligand_contacts['ligand_atom_type'].str.contains('alcohol')), 'rf_total'] = ligand_contacts[
                                                                                                          'rf_total'] + 0.8
     ligand_contacts.loc[(ligand_contacts['interaction_type'] == 'hbond_weak') &
-                        (ligand_contacts['is_hbond'] == True) &
+                        (ligand_contacts['is_hbond'] is True) &
                         (ligand_contacts['protein_atom_type'].isin(['O_ali_mix', 'O_pi_mix', 'Water'])),
                         'rf_total'] = ligand_contacts['rf_total'] + 0.3
 
@@ -164,15 +164,15 @@ def turn_off_secondary_clash_contacts(ligand_contacts):
     for ligand_file, df in ligand_contacts.groupby('ligand_file'):
         # Get the indices of the ligand atoms that clash
         clashing_atom_indices = df[df['is_clash']]['ligand_atom_index']
-        # clashing_atom_indices = clashing_atom_indices.append(df[(df['is_hbond']==False) & (df['vdw_distance'] < -0.1)]['ligand_atom_index'])
+        # clashing_atom_indices = clashing_atom_indices.append(df[(df['is_hbond'] is False) & (df['vdw_distance'] < -0.1)]['ligand_atom_index'])
 
         # Get the df indices of the contacts that clash
         clashing_df_indices = df[df['is_clash']].index
-        # clashing_df_indices = clashing_df_indices.append(df[(df['is_hbond'] == False) & (df['vdw_distance'] < -0.1)].index)
+        # clashing_df_indices = clashing_df_indices.append(df[(df['is_hbond'] is False) & (df['vdw_distance'] < -0.1)].index)
 
         # Get the atom indices of the secondary contacts that do no clash
         clashing_atom_contact_indices = df[(df['ligand_atom_index'].isin(clashing_atom_indices)) &
-                                           (df.index.isin(clashing_df_indices) == False)].index
+                                           (df.index.isin(clashing_df_indices) is False)].index
 
         secondary_clash_contact_indices.extend(clashing_atom_contact_indices)
 
@@ -181,7 +181,7 @@ def turn_off_secondary_clash_contacts(ligand_contacts):
         # min_bfactor = df['relative_bfactor'].min()
         # ligand_contacts.loc[water_rows, 'relative_bfactor'] = min_bfactor
     ligand_contacts['clash_count'] = \
-        ligand_contacts[ligand_contacts['is_clash'] == True].groupby(['ligand_file', 'ligand_atom_index'])[
+        ligand_contacts[ligand_contacts['is_clash'] is True].groupby(['ligand_file', 'ligand_atom_index'])[
             ['ligand_atom_index']].transform('count')
     ligand_contacts['clash_count'] = ligand_contacts['clash_count'].fillna(0)
     ligand_contacts.loc[ligand_contacts['clash_count'] > 3, 'clash_count'] = 3
@@ -224,7 +224,7 @@ def process_df(strain=['ANI_Strain'], task='pde10_h_pic50'):
     if not Path('best_soln_contacts.csv').is_file():
         contact_df = pd.concat(map(pd.read_csv, Path('..').glob('docking_job_*/docked_contact_df.csv')),
                                ignore_index=True)
-        contact_df = contact_df[contact_df['is_intramolecular'] == False]
+        contact_df = contact_df[contact_df['is_intramolecular'] is False]
         contact_df = contact_df.drop(columns=[c for c in contact_df.columns if 'Gold.Protein' in c])
         contact_df = contact_df.drop(columns=[c for c in contact_df.columns if c in ['Gold.Version',
                                                                                      'Gold.Chemscore.Hbonds',
@@ -239,13 +239,13 @@ def process_df(strain=['ANI_Strain'], task='pde10_h_pic50'):
 
     ligand_contacts = pd.read_csv('best_soln_contacts.csv')
     ligand_contacts = ligand_contacts[ligand_contacts['ligand_file'].isin(count_df['ligand_file'])]
-    ligand_contacts = ligand_contacts[ligand_contacts[task].isna() == False]
+    ligand_contacts = ligand_contacts[ligand_contacts[task].isna() is False]
 
     if 'ANI_Strain' in strain:
         ani_df = pd.read_csv('../all_docked_ani.csv')
         ani_df = ani_df[['SRN', 'ANI_Strain']]
         ligand_contacts = ligand_contacts.join(ani_df.set_index('SRN'), on='SRN')
-        ligand_contacts = ligand_contacts[ligand_contacts['ANI_Strain'].isna() == False]
+        ligand_contacts = ligand_contacts[ligand_contacts['ANI_Strain'].isna() is False]
 
     ligand_contacts = prepare_contact_df(ligand_contacts, count_df)
 
@@ -421,7 +421,7 @@ class PlpScoring(object):
 
         # negative values represent attraction, positive values represent repulsion
         favorable_contacts = ligand_contact_df[
-            ligand_contact_df['interaction_type'].isin(int_dict['unfavorable']) == False].copy()
+            ligand_contact_df['interaction_type'].isin(int_dict['unfavorable']) is False].copy()
         distances = favorable_contacts['distance'].sort_index()
         clash_counts = favorable_contacts['clash_count'].sort_index()
         favorable_contacts.loc[(distances < A), 'plp_energy'] = clash_factor * (clash_counts + 1) * (
@@ -431,7 +431,7 @@ class PlpScoring(object):
         favorable_contacts.loc[(distances >= C) & (distances < D), 'plp_energy'] = E * (D - distances) / (D - C)
 
         unfavorable_contacts = ligand_contact_df[
-            ligand_contact_df['interaction_type'].isin(int_dict['unfavorable']) == True].copy()
+            ligand_contact_df['interaction_type'].isin(int_dict['unfavorable']) is True].copy()
         clash_counts = unfavorable_contacts['clash_count'].sort_index()
         distances = unfavorable_contacts['distance'].sort_index()
         unfavorable_contacts.loc[(distances < A_unfav), 'plp_energy'] = clash_factor * (clash_counts + 1) * (
@@ -483,7 +483,7 @@ class PlpScoring(object):
             favorable_contacts[favorable_contacts['distance'].lt(A)].index)
 
         for interaction_type, interaction_df in ligand_contact_df[
-            ligand_contact_df.index.isin(clash_contact_indices) == False].groupby('interaction_type'):
+            ligand_contact_df.index.isin(clash_contact_indices) is False].groupby('interaction_type'):
             ligand_contact_df.loc[interaction_df.index, 'plp_energy'] = interaction_df['plp_energy'] * params_dict[
                 interaction_type + '_w']
         ligand_contact_df.loc[ligand_contact_df.index.isin(clash_contact_indices), 'plp_energy'] = -ligand_contact_df[
@@ -595,7 +595,7 @@ def main():
         for index, df in scores_df.sort_values(by='rescore', ascending=False).groupby('SRN'):
             ligand_files = df['ligand_file'].unique()
             ligand_files_remove.extend(ligand_files[1:])
-        scores_df = scores_df[scores_df['ligand_file'].isin(ligand_files_remove) == False]
+        scores_df = scores_df[scores_df['ligand_file'].isin(ligand_files_remove) is False]
         scores_df = scores_df[scores_df['rel_mcs_size'] >= 0.5]
         scores_df = scores_df.drop(columns=[c for c in scores_df.columns if 'Gold.Protein' in c])
         scores_df = scores_df.drop(columns=[c for c in scores_df.columns if c in ['Gold.Version',
