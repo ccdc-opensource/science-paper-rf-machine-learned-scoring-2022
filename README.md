@@ -71,5 +71,5 @@ moeweb -load /rf_scoring/soap_scoring_client.svl -load /template_docking/soap_te
 
 ## Scoring in MOE.
 
-Score an MDB of ligand poses for the active protein.
+Score an MDB of ligand poses for the active protein
 ---
