@@ -37,7 +37,7 @@ def main():
     df.loc[df['ligand_id'].str.contains('intra'), 'category'] = 'strain'
     df.loc[df['ligand_id'].str.contains('inter'), 'category'] = 'clash'
     df.loc[(df['ligand_id'].str.contains('inter') == False) & (
-                df['ligand_id'].str.contains('intra') == False), 'category'] = 'contact'
+            df['ligand_id'].str.contains('intra') == False), 'category'] = 'contact'
     df = df[df['is_parent'] == False]
 
     proasis_pdb_df = pd.read_csv('../proasis_pdb.csv')

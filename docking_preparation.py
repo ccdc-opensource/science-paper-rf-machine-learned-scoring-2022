@@ -6,13 +6,13 @@ Generate binding sites by doing an MCS alignment of project data to available cr
 
 ########################################################################################################################
 
-import pandas as pd
-from pathlib import Path
-import subprocess as sp
 import argparse
-
+import pandas as pd
+import subprocess as sp
 from ccdc import io, protein, descriptors, entry
+from pathlib import Path
 from rdkit import Chem
+
 
 ########################################################################################################################
 
@@ -105,7 +105,7 @@ def _get_pdb_ligname_df(target='pde-10'):
                 break
 
         structure_dicts.append({'ligand': lname, 'full_ligand_name': full_lname, 'pdb_file': str(pdb_file),
-                                   'template_file': template_file, 'strucid': strucid})
+                                'template_file': template_file, 'strucid': strucid})
 
     df = pd.DataFrame(structure_dicts)
 
@@ -263,6 +263,7 @@ def _export_ligands(target='pde-10'):
         with io.EntryWriter(ligand_out / f'{strucid}_{ligand_name}.sdf') as w:
             w.write(ligand_entry)
     return
+
 
 def main():
     args = parse_args()

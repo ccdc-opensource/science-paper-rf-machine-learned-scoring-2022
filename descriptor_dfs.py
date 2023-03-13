@@ -6,14 +6,14 @@ Generate binding sites by doing an MCS alignment of project data to available cr
 
 ########################################################################################################################
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
-import re
 import argparse
+import numpy as np
+import pandas as pd
+import re
 from ccdc import io
 from ccdc_roche.python import los_descriptors
 from ccdc_roche.python import rf_assignment
+from pathlib import Path
 
 
 ########################################################################################################################

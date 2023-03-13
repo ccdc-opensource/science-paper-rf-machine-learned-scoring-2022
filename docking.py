@@ -2,17 +2,17 @@
 
 ########################################################################################################################
 
-from pathlib import Path
 import argparse
-import subprocess as sp
-import os
-import sys
 import itertools
-from rdkit import Chem
-from ccdc import io, protein, descriptors, entry, search
-from ccdc_roche.python.los_descriptors import _cut_out_binding_site_by_distance
-from ccdc.docking import Docker
+import os
 import pandas as pd
+import subprocess as sp
+import sys
+from ccdc import io, protein, descriptors, entry, search
+from ccdc.docking import Docker
+from ccdc_roche.python.los_descriptors import _cut_out_binding_site_by_distance
+from pathlib import Path
+from rdkit import Chem
 
 
 ########################################################################################################################
